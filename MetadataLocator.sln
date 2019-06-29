@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29021.104
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator", "MetadataLocator\MetadataLocator.csproj", "{AED69D77-8C7B-41BA-9967-AC9B522430F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test", "MetadataLocator.Test\MetadataLocator.Test.csproj", "{BDFD2EFD-B6B7-4783-97A1-B8D1493E171C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR20.x86", "MetadataLocator.Test.CLR20.x86\MetadataLocator.Test.CLR20.x86.csproj", "{7368F4FE-ED71-433B-A525-F20EA7FA488D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR20.x64", "MetadataLocator.Test.CLR20.x64\MetadataLocator.Test.CLR20.x64.csproj", "{B925862F-E6BB-4F18-B560-B19153AB97D7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR40.x86", "MetadataLocator.Test.CLR40.x86\MetadataLocator.Test.CLR40.x86.csproj", "{7BA7644F-B706-415E-AE0E-CC5FC6247021}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR40.x64", "MetadataLocator.Test.CLR40.x64\MetadataLocator.Test.CLR40.x64.csproj", "{195944D9-ABA2-44CE-9F7D-AE432D114BD1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AED69D77-8C7B-41BA-9967-AC9B522430F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AED69D77-8C7B-41BA-9967-AC9B522430F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AED69D77-8C7B-41BA-9967-AC9B522430F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AED69D77-8C7B-41BA-9967-AC9B522430F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDFD2EFD-B6B7-4783-97A1-B8D1493E171C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDFD2EFD-B6B7-4783-97A1-B8D1493E171C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDFD2EFD-B6B7-4783-97A1-B8D1493E171C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDFD2EFD-B6B7-4783-97A1-B8D1493E171C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7368F4FE-ED71-433B-A525-F20EA7FA488D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7368F4FE-ED71-433B-A525-F20EA7FA488D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7368F4FE-ED71-433B-A525-F20EA7FA488D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7368F4FE-ED71-433B-A525-F20EA7FA488D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B925862F-E6BB-4F18-B560-B19153AB97D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B925862F-E6BB-4F18-B560-B19153AB97D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B925862F-E6BB-4F18-B560-B19153AB97D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B925862F-E6BB-4F18-B560-B19153AB97D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BA7644F-B706-415E-AE0E-CC5FC6247021}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BA7644F-B706-415E-AE0E-CC5FC6247021}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BA7644F-B706-415E-AE0E-CC5FC6247021}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BA7644F-B706-415E-AE0E-CC5FC6247021}.Release|Any CPU.Build.0 = Release|Any CPU
+		{195944D9-ABA2-44CE-9F7D-AE432D114BD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{195944D9-ABA2-44CE-9F7D-AE432D114BD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{195944D9-ABA2-44CE-9F7D-AE432D114BD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{195944D9-ABA2-44CE-9F7D-AE432D114BD1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {638DD4A8-E582-4EF9-B751-DF759C0C80FC}
+	EndGlobalSection
+EndGlobal

@@ -1,6 +1,9 @@
 # MetadataLocator
 Locate the address of .NET metadata by CLR to anti anti dump
 
+![locate-table-stream](./Images/locate-table-stream.png)
+Locate the table stream under the full protection of ConfuserEx (include AntiDump protection)
+
 ## Requirements
 - Any .NET Framework
 

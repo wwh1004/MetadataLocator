@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MetadataLocator</RootNamespace>
     <AssemblyName>MetadataLocator</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -39,10 +39,19 @@
   <ItemGroup>
     <Compile Include="MetadataHelper.cs" />
     <Compile Include="MetadataInfo.cs" />
-    <Compile Include="MetadataStreamInfo.cs" />
+    <Compile Include="MetadataInfoImpl.cs" />
     <Compile Include="NativeInterfaces.cs" />
     <Compile Include="NativeMethods.cs" />
+    <Compile Include="NativeSharp\Additions\MemoryIO.cs" />
+    <Compile Include="NativeSharp\Additions\ProcessInfo.cs" />
+    <Compile Include="NativeSharp\Additions\ProcessUtils.cs" />
+    <Compile Include="NativeSharp\NativeMethods.cs" />
+    <Compile Include="NativeSharp\NativeModule.cs" />
+    <Compile Include="NativeSharp\NativeProcess.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

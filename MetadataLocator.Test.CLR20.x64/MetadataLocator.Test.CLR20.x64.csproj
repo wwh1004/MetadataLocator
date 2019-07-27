@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>MetadataLocator.Test.CLR20.x64</RootNamespace>
     <AssemblyName>MetadataLocator.Test.CLR20.x64</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>

@@ -5,13 +5,13 @@ using static MetadataLocator.NativeMethods;
 
 namespace MetadataLocator {
 	/// <summary>
-	/// Metadata helper
+	/// Metadata interface helper
 	/// </summary>
-	public static unsafe class MetadataHelper {
+	public static unsafe class MetadataInterfaceHelper {
 		private static readonly bool _isClr2x;
 		private static readonly MethodInfo _getMetadataImport;
 
-		static MetadataHelper() {
+		static MetadataInterfaceHelper() {
 			_isClr2x = Environment.Version.Major == 2;
 			_getMetadataImport = typeof(ModuleHandle).GetMethod("_GetMetadataImport", _isClr2x ? BindingFlags.NonPublic | BindingFlags.Instance : BindingFlags.NonPublic | BindingFlags.Static);
 		}

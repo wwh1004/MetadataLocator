@@ -17,7 +17,7 @@ namespace MetadataLocator {
 			IMetaDataTables metaDataTables;
 			MetadataInfo metadataInfo;
 
-			metaDataTables = MetadataHelper.GetIMetaDataTables(MetadataHelper.GetMetadataImport(module));
+			metaDataTables = MetadataInterfaceHelper.GetIMetaDataTables(MetadataInterfaceHelper.GetMetadataImport(module));
 			if (metaDataTables is null)
 				throw new InvalidOperationException();
 			metadataInfo = new MetadataInfo {

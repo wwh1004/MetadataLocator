@@ -454,15 +454,9 @@ namespace MetadataLocator {
 				// 读取当前偏移对应的值
 				if (level == offsetMatrix.Length - 1) {
 					// 是最后一级偏移
-					if (result && checker((IntPtr)values[level])) {
+					if (result && checker((IntPtr)values[level]))
 						// 如果读取成功，说明是最后一级偏移，检测是否为有效指针，添加到列表
-						uint[] offsets;
-
-						offsets = new uint[offsetMatrix.Length - 1];
-						for (int i = 0; i < offsets.Length; i++)
-							offsets[i] = offsetMatrix[i + 1][offsetIndices[i + 1]];
-						pointers.Add(new Pointer(null, offsetMatrix[0][offsetIndices[0]], offsets));
-					}
+						pointers.Add(new Pointer(null, Enumerable.Range(0, offsetMatrix.Length).Select(t => offsetMatrix[t][offsetIndices[t]]).ToArray()));
 					offsetIndices[level] += 1;
 					// 尝试当前级偏移数组的下一个偏移
 				}

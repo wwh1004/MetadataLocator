@@ -372,51 +372,27 @@ namespace MetadataLocator {
 		}
 
 		private static List<Pointer> ScanCor20HeaderAddressPointerTemplates() {
-			void* moduleHandle;
-			List<Pointer> pointers;
 			uint[] m_fileOffsets;
 			uint[] m_identityOffsets;
 			uint[] unknownOffset1s;
 			uint[] m_pCorHeaderOffsets;
+			uint[][] offsetMatrix;
 
-			moduleHandle = TestModuleHandles[0];
-			pointers = new List<Pointer>();
+			m_fileOffsets = IntPtr.Size == 4 ? new uint[] { 0x4, 0x8 } : new uint[] { 0x8, 0x10 };
+			// Module.m_file
 			m_identityOffsets = IntPtr.Size == 4 ? new uint[] { 0x8 } : new uint[] { 0x10 };
 			// PEFile.m_openedILimage
 			unknownOffset1s = Enumerable.Range(0, (0x80 - 0x20) / 4).Select(t => 0x20 + ((uint)t * 4)).ToArray();
 			// PEImage.????
 			m_pCorHeaderOffsets = IntPtr.Size == 4 ? new uint[] { 0x14 } : new uint[] { 0x20 };
 			// PEDecoder.m_pCorHeader
-			m_fileOffsets = IntPtr.Size == 4 ? new uint[] { 0x4, 0x8 } : new uint[] { 0x8, 0x10 };
-			// Module.m_file
-			foreach (uint m_fileOffset in m_fileOffsets) {
-				IntPtr m_file;
-
-				if (!TryReadIntPtr((byte*)moduleHandle + m_fileOffset, out m_file))
-					continue;
-				foreach (uint m_identityOffset in m_identityOffsets) {
-					IntPtr m_identity;
-
-					if (!TryReadIntPtr((byte*)m_file + m_identityOffset, out m_identity))
-						continue;
-					foreach (uint unknownOffset1 in unknownOffset1s) {
-						IntPtr unknown1;
-
-						if (!TryReadIntPtr((byte*)m_identity + unknownOffset1, out unknown1))
-							continue;
-						foreach (uint m_pCorHeaderOffset in m_pCorHeaderOffsets) {
-							IntPtr pCorHeader;
-
-							if (!TryReadIntPtr((byte*)unknown1 + m_pCorHeaderOffset, out pCorHeader))
-								continue;
-							if (!CheckCor20HeaderAddressPointer((void*)pCorHeader))
-								continue;
-							pointers.Add(new Pointer(null, m_fileOffset, m_identityOffset, unknownOffset1, m_pCorHeaderOffset));
-						}
-					}
-				}
-			}
-			return pointers;
+			offsetMatrix = new uint[][] {
+				m_fileOffsets,
+				m_identityOffsets,
+				unknownOffset1s,
+				m_pCorHeaderOffsets
+			};
+			return ScanPointerTemplates(TestModuleHandles[0], offsetMatrix, pCorHeader => CheckCor20HeaderAddressPointer((void*)pCorHeader));
 		}
 
 		private static bool CheckCor20HeaderAddressPointer(void* pCorHeader) {
@@ -428,14 +404,11 @@ namespace MetadataLocator {
 		}
 
 		private static List<Pointer> ScanMetadataAddressPointerTemplates() {
-			void* moduleHandle;
-			List<Pointer> pointers;
 			uint[] m_fileOffsets;
 			uint[] unknownOffset1s;
 			uint[] unknownOffset2s;
+			uint[][] offsetMatrix;
 
-			moduleHandle = TestModuleHandles[0];
-			pointers = new List<Pointer>();
 			m_fileOffsets = IntPtr.Size == 4 ? new uint[] { 0x4, 0x8 } : new uint[] { 0x8, 0x10 };
 			// Module.m_file
 			unknownOffset1s = Enumerable.Range(0, (0x3C - 0x10) / 4).Select(t => 0x10 + ((uint)t * 4)).ToArray();
@@ -444,28 +417,12 @@ namespace MetadataLocator {
 				? Enumerable.Range(0, (0x39C - 0x350) / 4).Select(t => 0x350 + ((uint)t * 4)).ToArray()
 				: Enumerable.Range(0, (0x5FC - 0x5B0) / 4).Select(t => 0x5B0 + ((uint)t * 4)).ToArray();
 			// ????.????
-			foreach (uint m_fileOffset in m_fileOffsets) {
-				IntPtr m_file;
-
-				if (!TryReadIntPtr((byte*)moduleHandle + m_fileOffset, out m_file))
-					continue;
-				foreach (uint unknownOffset1 in unknownOffset1s) {
-					IntPtr unknown1;
-
-					if (!TryReadIntPtr((byte*)m_file + unknownOffset1, out unknown1))
-						continue;
-					foreach (uint unknownOffset2 in unknownOffset2s) {
-						IntPtr pMetadata;
-
-						if (!TryReadIntPtr((byte*)unknown1 + unknownOffset2, out pMetadata))
-							continue;
-						if (!CheckMetadataAddressPointer((void*)pMetadata))
-							continue;
-						pointers.Add(new Pointer(null, m_fileOffset, unknownOffset1, unknownOffset2));
-					}
-				}
-			}
-			return pointers;
+			offsetMatrix = new uint[][] {
+				m_fileOffsets,
+				unknownOffset1s,
+				unknownOffset2s
+			};
+			return ScanPointerTemplates(TestModuleHandles[0], offsetMatrix, pMetadata => CheckMetadataAddressPointer((void*)pMetadata));
 		}
 
 		private static bool CheckMetadataAddressPointer(void* pMetadata) {
@@ -474,6 +431,66 @@ namespace MetadataLocator {
 			if (!TryReadUInt32(pMetadata, out signature))
 				return false;
 			return signature == 0x424A5342;
+		}
+
+		private static List<Pointer> ScanPointerTemplates(void* baseAddress, uint[][] offsetMatrix, Predicate<IntPtr> checker) {
+			int level;
+			int[] offsetIndices;
+			void*[] values;
+			List<Pointer> pointers;
+
+			level = 0;
+			// 表示第几级偏移
+			offsetIndices = new int[offsetMatrix.Length];
+			// 表示每一级偏移对应在offsetMatrix中的索引
+			values = new void*[offsetMatrix.Length];
+			// 表示每一级地址的值
+			pointers = new List<Pointer>();
+			while (true) {
+				bool result;
+
+				result = TryReadIntPtr((byte*)(level > 0 ? values[level - 1] : baseAddress) + offsetMatrix[level][offsetIndices[level]], out IntPtr temp);
+				values[level] = (void*)temp;
+				// 读取当前偏移对应的值
+				if (level == offsetMatrix.Length - 1) {
+					// 是最后一级偏移
+					if (result && checker((IntPtr)values[level])) {
+						// 如果读取成功，说明是最后一级偏移，检测是否为有效指针，添加到列表
+						uint[] offsets;
+
+						offsets = new uint[offsetMatrix.Length - 1];
+						for (int i = 0; i < offsets.Length; i++)
+							offsets[i] = offsetMatrix[i + 1][offsetIndices[i + 1]];
+						pointers.Add(new Pointer(null, offsetMatrix[0][offsetIndices[0]], offsets));
+					}
+					offsetIndices[level] += 1;
+					// 尝试当前级偏移数组的下一个偏移
+				}
+				else {
+					// 不是最后一级偏移
+					if (result)
+						level += 1;
+					else
+						offsetIndices[level] += 1;
+				}
+				while (true) {
+					// 回溯
+					if (offsetIndices[level] == offsetMatrix[level].Length) {
+						// 如果当前级偏移尝试完成了
+						if (level > 0) {
+							// 回溯到上一级，清空当前级数据
+							offsetIndices[level] = 0;
+							level -= 1;
+							offsetIndices[level] += 1;
+						}
+						else
+							// 已经回溯到了level=0，说明扫描完成
+							return pointers;
+					}
+					else
+						break;
+				}
+			}
 		}
 
 		private static void* GetModuleHandle(Module module) {

@@ -174,7 +174,7 @@ namespace MetadataLocator {
 				if (_testModuleHandles == null) {
 					IntPtr[] testModuleHandles;
 
-					testModuleHandles = Enumerable.Range(0, 5).Select(t => (IntPtr)GetModuleHandle(GenerateAssembly(false).ManifestModule)).ToArray();
+					testModuleHandles = Enumerable.Range(0, 3).Select(t => (IntPtr)GetModuleHandle(GenerateAssembly(false).ManifestModule)).ToArray();
 					_testModuleHandles = new void*[testModuleHandles.Length];
 					for (int i = 0; i < testModuleHandles.Length; i++)
 						_testModuleHandles[i] = (void*)testModuleHandles[i];

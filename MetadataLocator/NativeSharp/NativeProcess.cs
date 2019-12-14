@@ -1,26 +1,93 @@
 using System;
-using static NativeSharp.NativeMethods;
+using System.Collections.Generic;
+using static MetadataLocator.NativeSharp.NativeMethods;
 
-namespace NativeSharp {
-	/// <summary>
-	/// Win32进程
-	/// </summary>
-	internal sealed unsafe partial class NativeProcess : IDisposable {
-		private static readonly NativeProcess _currentProcess = new NativeProcess(GetCurrentProcess());
+namespace MetadataLocator.NativeSharp {
+	internal static unsafe class NativeProcess {
+		private static readonly void* _handle = GetCurrentProcess();
 
-		private readonly void* _handle;
+		public static bool TryToAddress(Pointer pointer, out void* address) {
+			address = default;
+			if (pointer is null)
+				return false;
 
-		/// <summary>
-		/// 当前进程
-		/// </summary>
-		public static NativeProcess CurrentProcess => _currentProcess;
-
-		private NativeProcess(void* handle) {
-			_handle = handle;
+			return ToAddressInternal(_handle, pointer, out address);
 		}
 
-		/// <summary />
-		public void Dispose() {
+		public static bool TryReadUInt32(void* address, out uint value) {
+			return ReadUInt32Internal(_handle, address, out value);
+		}
+
+		public static bool TryReadIntPtr(void* address, out IntPtr value) {
+			return ReadIntPtrInternal(_handle, address, out value);
+		}
+
+		internal static bool ToAddressInternal(void* processHandle, Pointer pointer, out void* address) {
+			return IntPtr.Size == 8 ? ToAddressPrivate64(processHandle, pointer, out address) : ToAddressPrivate32(processHandle, pointer, out address);
+		}
+
+		private static bool ToAddressPrivate32(void* processHandle, Pointer pointer, out void* address) {
+			uint newAddress;
+			IList<uint> offsets;
+
+			address = default;
+			newAddress = (uint)pointer.BaseAddress;
+			offsets = pointer.Offsets;
+			if (offsets.Count > 0) {
+				for (int i = 0; i < offsets.Count - 1; i++) {
+					newAddress += offsets[i];
+					if (!ReadUInt32Internal(processHandle, (void*)newAddress, out newAddress))
+						return false;
+				}
+				newAddress += offsets[offsets.Count - 1];
+			}
+			address = (void*)newAddress;
+			return true;
+		}
+
+		private static bool ToAddressPrivate64(void* processHandle, Pointer pointer, out void* address) {
+			ulong newAddress;
+			IList<uint> offsets;
+
+			address = default;
+			newAddress = (ulong)pointer.BaseAddress;
+			offsets = pointer.Offsets;
+			if (offsets.Count > 0) {
+				for (int i = 0; i < offsets.Count - 1; i++) {
+					newAddress += offsets[i];
+					if (!ReadUInt64Internal(processHandle, (void*)newAddress, out newAddress))
+						return false;
+				}
+				newAddress += offsets[offsets.Count - 1];
+			}
+			address = (void*)newAddress;
+			return true;
+		}
+
+		internal static bool ReadUInt32Internal(void* processHandle, void* address, out uint value) {
+			fixed (void* p = &value)
+				return ReadInternal(processHandle, address, p, 4);
+		}
+
+		internal static bool ReadUInt64Internal(void* processHandle, void* address, out ulong value) {
+			fixed (void* p = &value)
+				return ReadInternal(processHandle, address, p, 8);
+		}
+
+		internal static bool ReadIntPtrInternal(void* processHandle, void* address, out IntPtr value) {
+			fixed (void* p = &value)
+				return ReadInternal(processHandle, address, p, (uint)IntPtr.Size);
+		}
+
+		internal static bool ReadInternal(void* processHandle, void* address, void* value, uint length) {
+			return ReadProcessMemory(processHandle, address, value, length, null);
+		}
+
+		public static void* GetModule(string moduleName) {
+			if (string.IsNullOrEmpty(moduleName))
+				throw new ArgumentNullException(nameof(moduleName));
+
+			return GetModuleHandle(moduleName);
 		}
 	}
 }

@@ -36,7 +36,7 @@ namespace MetadataLocator {
 		/// <param name="pIMDInternalImport">A pointer to the instance of IMDInternalImport</param>
 		/// <returns></returns>
 		public static IMetaDataTables GetIMetaDataTables(void* pIMDInternalImport) {
-			if (pIMDInternalImport is null)
+			if (pIMDInternalImport == null)
 				throw new ArgumentNullException(nameof(pIMDInternalImport));
 
 			int result;
@@ -53,7 +53,7 @@ namespace MetadataLocator {
 		/// <param name="pIMDInternalImport">A pointer to the instance of IMDInternalImport</param>
 		/// <returns></returns>
 		public static IMetaDataTables2 GetIMetaDataTables2(void* pIMDInternalImport) {
-			if (pIMDInternalImport is null)
+			if (pIMDInternalImport == null)
 				throw new ArgumentNullException(nameof(pIMDInternalImport));
 
 			int result;
@@ -69,7 +69,7 @@ namespace MetadataLocator {
 		}
 
 		private static T GetManagedInterface<T>(void* pIUnknown) where T : class {
-			if (pIUnknown is null)
+			if (pIUnknown == null)
 				throw new ArgumentNullException(nameof(pIUnknown));
 
 			return (T)Marshal.GetObjectForIUnknown((IntPtr)pIUnknown);

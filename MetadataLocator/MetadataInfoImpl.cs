@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using NativeSharp;
-using Pointer = NativeSharp.Pointer;
+using MetadataLocator.NativeSharp;
+using Pointer = MetadataLocator.NativeSharp.Pointer;
 
 namespace MetadataLocator {
 	internal static unsafe class MetadataInfoImpl {
@@ -271,7 +271,7 @@ namespace MetadataLocator {
 
 				moduleName = Path.GetFileName(module.Assembly.Location);
 				moduleName = Path.GetFileNameWithoutExtension(moduleName) + ".ni" + Path.GetExtension(moduleName);
-				return NativeProcess.CurrentProcess.GetModule(moduleName) != null;
+				return NativeProcess.GetModule(moduleName) != null;
 			}
 			catch {
 				return false;
@@ -499,15 +499,15 @@ namespace MetadataLocator {
 		}
 
 		private static bool TryToAddress(Pointer pointer, out void* address) {
-			return NativeProcess.CurrentProcess.TryToAddress(pointer, out address);
+			return NativeProcess.TryToAddress(pointer, out address);
 		}
 
 		private static bool TryReadUInt32(void* address, out uint value) {
-			return NativeProcess.CurrentProcess.TryReadUInt32(address, out value);
+			return NativeProcess.TryReadUInt32(address, out value);
 		}
 
 		private static bool TryReadIntPtr(void* address, out IntPtr value) {
-			return NativeProcess.CurrentProcess.TryReadIntPtr(address, out value);
+			return NativeProcess.TryReadIntPtr(address, out value);
 		}
 	}
 }

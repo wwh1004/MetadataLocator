@@ -42,12 +42,9 @@
     <Compile Include="MetadataInfoImpl.cs" />
     <Compile Include="MetadataInterfaceHelper.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="NativeSharp\Additions\MemoryIO.cs" />
-    <Compile Include="NativeSharp\Additions\ProcessInfo.cs" />
-    <Compile Include="NativeSharp\Additions\ProcessUtils.cs" />
     <Compile Include="NativeSharp\NativeMethods.cs" />
-    <Compile Include="NativeSharp\NativeModule.cs" />
     <Compile Include="NativeSharp\NativeProcess.cs" />
+    <Compile Include="NativeSharp\Pointer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

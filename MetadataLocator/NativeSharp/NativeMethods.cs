@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace NativeSharp {
+namespace MetadataLocator.NativeSharp {
 	internal static unsafe class NativeMethods {
 		public const uint LIST_MODULES_ALL = 0x3;
 		public const uint MAX_MODULE_NAME32 = 255;
@@ -18,10 +18,9 @@ namespace NativeSharp {
 
 		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool EnumProcessModulesEx(void* hProcess, void** lphModule, uint cb, out uint lpcbNeeded, uint dwFilterFlag);
-
-		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool GetModuleBaseName(void* hProcess, void* hModule, StringBuilder lpBaseName, uint nSize);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		public static extern void* GetModuleHandle(string lpModuleName);
 	}
 }

@@ -3,11 +3,8 @@ using System;
 namespace MetadataLocator.Test {
 	public static unsafe class Tester {
 		public static void Test() {
-			MetadataInfo metadataInfo;
-			DotNetPEInfo dotNetPEInfo;
-
-			metadataInfo = MetadataInfo.GetMetadataInfo(typeof(MetadataInfo).Module);
-			dotNetPEInfo = metadataInfo.PEInfo;
+			var metadataInfo = MetadataInfo.GetMetadataInfo(typeof(MetadataInfo).Module);
+			var dotNetPEInfo = metadataInfo.PEInfo;
 			PrintStreamInfo("#~ or #-", metadataInfo.TableStream);
 			PrintStreamInfo("#Strings", metadataInfo.StringHeap);
 			PrintStreamInfo("#US", metadataInfo.UserStringHeap);
@@ -30,7 +27,7 @@ namespace MetadataLocator.Test {
 			}
 			else {
 				Console.WriteLine($"Address: 0x{((IntPtr)streamInfo.Address).ToHexString()}");
-				Console.WriteLine($"Length: 0x{streamInfo.Length.ToString("X8")}");
+				Console.WriteLine($"Length: 0x0{streamInfo.Length:X8}");
 			}
 			Console.WriteLine();
 		}

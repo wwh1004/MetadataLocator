@@ -41,7 +41,6 @@ namespace MetadataLocator {
 
 			int result;
 			void* pIMetaDataTables;
-
 			fixed (Guid* riid = &IID_IMetaDataTables)
 				result = GetMetaDataPublicInterfaceFromInternal(pIMDInternalImport, riid, &pIMetaDataTables);
 			return result == 0 ? GetManagedInterface<IMetaDataTables>(pIMetaDataTables) : null;

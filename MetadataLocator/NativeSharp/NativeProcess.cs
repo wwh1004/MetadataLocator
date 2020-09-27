@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using static MetadataLocator.NativeSharp.NativeMethods;
 
 namespace MetadataLocator.NativeSharp {
@@ -27,12 +26,9 @@ namespace MetadataLocator.NativeSharp {
 		}
 
 		private static bool ToAddressPrivate32(void* processHandle, Pointer pointer, out void* address) {
-			uint newAddress;
-			IList<uint> offsets;
-
 			address = default;
-			newAddress = (uint)pointer.BaseAddress;
-			offsets = pointer.Offsets;
+			uint newAddress = (uint)pointer.BaseAddress;
+			var offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];
@@ -46,12 +42,9 @@ namespace MetadataLocator.NativeSharp {
 		}
 
 		private static bool ToAddressPrivate64(void* processHandle, Pointer pointer, out void* address) {
-			ulong newAddress;
-			IList<uint> offsets;
-
 			address = default;
-			newAddress = (ulong)pointer.BaseAddress;
-			offsets = pointer.Offsets;
+			ulong newAddress = (ulong)pointer.BaseAddress;
+			var offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];

@@ -2,6 +2,8 @@ version: '{build}'
 image: Visual Studio 2019
 configuration: Release
 platform: Any CPU
+before_build:
+- cmd: appveyor-retry nuget restore
 build:
   project: MetadataLocator.sln
   verbosity: normal

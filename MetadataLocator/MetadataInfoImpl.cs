@@ -41,7 +41,7 @@ namespace MetadataLocator {
 				tablesSize += rowSize * rowCount;
 				validTableCount++;
 			}
-			uint headerSize = 0x18 + validTableCount * 4;
+			uint headerSize = 0x18 + (validTableCount * 4);
 			ThrowOnError(metadataInfo.MetaDataTables.GetRow(0, 1, out void* address));
 			return new MetadataStreamInfo {
 				Address = (byte*)address - headerSize,

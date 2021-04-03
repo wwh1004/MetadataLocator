@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<Title>$(ProjectName)</Title>
 		<Version>1.1.0.3</Version>
-		<Copyright>Copyright © 2019-2020 Wwh</Copyright>
+		<Copyright>Copyright © 2019-2021 Wwh</Copyright>
 	</PropertyGroup>
 	<PropertyGroup>
 		<TargetFramework>net35</TargetFramework>

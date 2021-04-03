@@ -46,23 +46,6 @@ namespace MetadataLocator {
 			return result == 0 ? GetManagedInterface<IMetaDataTables>(pIMetaDataTables) : null;
 		}
 
-		/// <summary>
-		/// Get the instance of <see cref="IMetaDataTables2"/> from IMDInternalImport
-		/// </summary>
-		/// <param name="pIMDInternalImport">A pointer to the instance of IMDInternalImport</param>
-		/// <returns></returns>
-		public static IMetaDataTables2 GetIMetaDataTables2(void* pIMDInternalImport) {
-			if (pIMDInternalImport == null)
-				throw new ArgumentNullException(nameof(pIMDInternalImport));
-
-			int result;
-			void* pIMetaDataTables2;
-
-			fixed (Guid* riid = &IID_IMetaDataTables2)
-				result = GetMetaDataPublicInterfaceFromInternal(pIMDInternalImport, riid, &pIMetaDataTables2);
-			return result == 0 ? GetManagedInterface<IMetaDataTables2>(pIMetaDataTables2) : null;
-		}
-
 		private static int GetMetaDataPublicInterfaceFromInternal(void* pv, Guid* riid, void** ppv) {
 			return _isClr2x ? GetMetaDataPublicInterfaceFromInternal2(pv, riid, ppv) : GetMetaDataPublicInterfaceFromInternal4(pv, riid, ppv);
 		}

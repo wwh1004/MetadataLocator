@@ -14,8 +14,8 @@ public static unsafe class Tester {
 		Console.WriteLine($"DotNetPEInfo.IsValid: {dotNetPEInfo.IsValid}");
 		if (dotNetPEInfo.IsValid) {
 			Console.WriteLine($"DotNetPEInfo.ImageLayout: {dotNetPEInfo.ImageLayout}");
-			Console.WriteLine($"DotNetPEInfo.Cor20HeaderAddress: {((IntPtr)dotNetPEInfo.Cor20HeaderAddress).ToHexString()}");
-			Console.WriteLine($"DotNetPEInfo.MetadataAddress: {((IntPtr)dotNetPEInfo.MetadataAddress).ToHexString()}");
+			Console.WriteLine($"DotNetPEInfo.Cor20HeaderAddress: {dotNetPEInfo.Cor20HeaderAddress.ToHexString()}");
+			Console.WriteLine($"DotNetPEInfo.MetadataAddress: {dotNetPEInfo.MetadataAddress.ToHexString()}");
 			Console.WriteLine($"DotNetPEInfo.MetadataSize: {dotNetPEInfo.MetadataSize}");
 		}
 		Console.ReadKey(true);
@@ -27,13 +27,13 @@ public static unsafe class Tester {
 			Console.WriteLine("Not exists.");
 		}
 		else {
-			Console.WriteLine($"Address: 0x{((IntPtr)streamInfo.Address).ToHexString()}");
+			Console.WriteLine($"Address: 0x{((nuint)streamInfo.Address).ToHexString()}");
 			Console.WriteLine($"Length: 0x0{streamInfo.Length:X8}");
 		}
 		Console.WriteLine();
 	}
 
-	static string ToHexString(this IntPtr intPtr) {
-		return intPtr.ToString(IntPtr.Size == 4 ? "X8" : "X16");
+	static string ToHexString(this nuint intPtr) {
+		return ((nint)intPtr).ToString(sizeof(nuint) == 4 ? "X8" : "X16");
 	}
 }

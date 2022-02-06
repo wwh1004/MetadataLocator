@@ -20,11 +20,11 @@ public enum ImageLayout {
 /// <summary>
 /// Metadata stream info
 /// </summary>
-public sealed unsafe class MetadataStreamInfo {
+public sealed class MetadataStreamInfo {
 	/// <summary>
 	/// Address of stream
 	/// </summary>
-	public void* Address;
+	public nuint Address;
 
 	/// <summary>
 	/// Length of stream
@@ -35,7 +35,7 @@ public sealed unsafe class MetadataStreamInfo {
 /// <summary>
 /// .NET PE Info
 /// </summary>
-public sealed unsafe class DotNetPEInfo {
+public sealed class DotNetPEInfo {
 	/// <summary>
 	/// Determine if current instance is valid
 	/// </summary>
@@ -49,12 +49,12 @@ public sealed unsafe class DotNetPEInfo {
 	/// <summary>
 	/// Address of COR20_HEADER
 	/// </summary>
-	public void* Cor20HeaderAddress;
+	public nuint Cor20HeaderAddress;
 
 	/// <summary>
 	/// Address of metadata
 	/// </summary>
-	public void* MetadataAddress;
+	public nuint MetadataAddress;
 
 	/// <summary>
 	/// Size of metadata

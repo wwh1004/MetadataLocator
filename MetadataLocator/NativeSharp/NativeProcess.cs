@@ -4,9 +4,9 @@ using static MetadataLocator.NativeSharp.NativeMethods;
 namespace MetadataLocator.NativeSharp;
 
 static unsafe class NativeProcess {
-	static readonly void* handle = GetCurrentProcess();
+	static readonly nuint handle = GetCurrentProcess();
 
-	public static bool TryToAddress(Pointer pointer, out void* address) {
+	public static bool TryToAddress(Pointer pointer, out nuint address) {
 		address = default;
 		if (pointer is null)
 			return false;
@@ -14,70 +14,70 @@ static unsafe class NativeProcess {
 		return ToAddressInternal(handle, pointer, out address);
 	}
 
-	public static bool TryReadUInt32(void* address, out uint value) {
+	public static bool TryReadUInt32(nuint address, out uint value) {
 		return ReadUInt32Internal(handle, address, out value);
 	}
 
-	public static bool TryReadIntPtr(void* address, out IntPtr value) {
+	public static bool TryReadIntPtr(nuint address, out nuint value) {
 		return ReadIntPtrInternal(handle, address, out value);
 	}
 
-	static bool ToAddressInternal(void* processHandle, Pointer pointer, out void* address) {
-		return IntPtr.Size == 8 ? ToAddressPrivate64(processHandle, pointer, out address) : ToAddressPrivate32(processHandle, pointer, out address);
+	static bool ToAddressInternal(nuint processHandle, Pointer pointer, out nuint address) {
+		return sizeof(nuint) == 8 ? ToAddressPrivate64(processHandle, pointer, out address) : ToAddressPrivate32(processHandle, pointer, out address);
 	}
 
-	static bool ToAddressPrivate32(void* processHandle, Pointer pointer, out void* address) {
+	static bool ToAddressPrivate32(nuint processHandle, Pointer pointer, out nuint address) {
 		address = default;
 		uint newAddress = (uint)pointer.BaseAddress;
 		var offsets = pointer.Offsets;
 		if (offsets.Count > 0) {
 			for (int i = 0; i < offsets.Count - 1; i++) {
 				newAddress += offsets[i];
-				if (!ReadUInt32Internal(processHandle, (void*)newAddress, out newAddress))
+				if (!ReadUInt32Internal(processHandle, newAddress, out newAddress))
 					return false;
 			}
 			newAddress += offsets[offsets.Count - 1];
 		}
-		address = (void*)newAddress;
+		address = newAddress;
 		return true;
 	}
 
-	static bool ToAddressPrivate64(void* processHandle, Pointer pointer, out void* address) {
+	static bool ToAddressPrivate64(nuint processHandle, Pointer pointer, out nuint address) {
 		address = default;
-		ulong newAddress = (ulong)pointer.BaseAddress;
+		ulong newAddress = pointer.BaseAddress;
 		var offsets = pointer.Offsets;
 		if (offsets.Count > 0) {
 			for (int i = 0; i < offsets.Count - 1; i++) {
 				newAddress += offsets[i];
-				if (!ReadUInt64Internal(processHandle, (void*)newAddress, out newAddress))
+				if (!ReadUInt64Internal(processHandle, (nuint)newAddress, out newAddress))
 					return false;
 			}
 			newAddress += offsets[offsets.Count - 1];
 		}
-		address = (void*)newAddress;
+		address = (nuint)newAddress;
 		return true;
 	}
 
-	static bool ReadUInt32Internal(void* processHandle, void* address, out uint value) {
+	static bool ReadUInt32Internal(nuint processHandle, nuint address, out uint value) {
 		fixed (void* p = &value)
-			return ReadInternal(processHandle, address, p, 4);
+			return ReadInternal(processHandle, address, (nuint)p, 4);
 	}
 
-	static bool ReadUInt64Internal(void* processHandle, void* address, out ulong value) {
+	static bool ReadUInt64Internal(nuint processHandle, nuint address, out ulong value) {
 		fixed (void* p = &value)
-			return ReadInternal(processHandle, address, p, 8);
+			return ReadInternal(processHandle, address, (nuint)p, 8);
 	}
 
-	static bool ReadIntPtrInternal(void* processHandle, void* address, out IntPtr value) {
+	static bool ReadIntPtrInternal(nuint processHandle, nuint address, out nuint value) {
 		fixed (void* p = &value)
-			return ReadInternal(processHandle, address, p, (uint)IntPtr.Size);
+			return ReadInternal(processHandle, address, (nuint)p, (uint)sizeof(nuint));
 	}
 
-	static bool ReadInternal(void* processHandle, void* address, void* value, uint length) {
-		return ReadProcessMemory(processHandle, address, value, length, null);
+	static bool ReadInternal(nuint processHandle, nuint address, nuint value, uint length) {
+		return ReadProcessMemory(processHandle, address, value, length, out _);
 	}
 
-	public static void* GetModule(string moduleName) {
+	public static nuint GetModule(string moduleName) {
 		if (string.IsNullOrEmpty(moduleName))
 			throw new ArgumentNullException(nameof(moduleName));
 

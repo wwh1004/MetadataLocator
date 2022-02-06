@@ -2,12 +2,12 @@ using System.Collections.Generic;
 
 namespace MetadataLocator.NativeSharp;
 
-unsafe sealed class Pointer {
-	public void* BaseAddress { get; set; }
+sealed class Pointer {
+	public nuint BaseAddress { get; set; }
 
 	public IList<uint> Offsets { get; }
 
-	public Pointer(void* baseAddress, params uint[] offsets) {
+	public Pointer(nuint baseAddress, params uint[] offsets) {
 		BaseAddress = baseAddress;
 		Offsets = new List<uint>(offsets);
 	}

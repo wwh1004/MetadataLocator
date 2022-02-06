@@ -8,7 +8,7 @@ namespace MetadataLocator;
 /// <summary>
 /// Metadata interface helper
 /// </summary>
-public static unsafe class MetadataInterfaceHelper {
+public static class MetadataInterfaceHelper {
 	static readonly bool isClr2x;
 	static readonly MethodInfo getMetadataImport;
 
@@ -22,13 +22,13 @@ public static unsafe class MetadataInterfaceHelper {
 	/// </summary>
 	/// <param name="module"></param>
 	/// <returns></returns>
-	public static void* GetMetadataImport(Module module) {
+	public static unsafe nuint GetMetadataImport(Module module) {
 		if (module is null)
 			throw new ArgumentNullException(nameof(module));
-
+			
 		return isClr2x
-			? Pointer.Unbox(getMetadataImport.Invoke(module.ModuleHandle, null))
-			: (void*)(IntPtr)getMetadataImport.Invoke(null, new object[] { module });
+			? (nuint)Pointer.Unbox(getMetadataImport.Invoke(module.ModuleHandle, null))
+			: (nuint)(nint)getMetadataImport.Invoke(null, new object[] { module });
 	}
 
 	/// <summary>
@@ -36,25 +36,22 @@ public static unsafe class MetadataInterfaceHelper {
 	/// </summary>
 	/// <param name="pIMDInternalImport">A pointer to the instance of IMDInternalImport</param>
 	/// <returns></returns>
-	public static IMetaDataTables GetIMetaDataTables(void* pIMDInternalImport) {
-		if (pIMDInternalImport == null)
+	public static IMetaDataTables GetIMetaDataTables(nuint pIMDInternalImport) {
+		if (pIMDInternalImport == 0)
 			throw new ArgumentNullException(nameof(pIMDInternalImport));
 
-		int result;
-		void* pIMetaDataTables;
-		fixed (Guid* riid = &IID_IMetaDataTables)
-			result = GetMetaDataPublicInterfaceFromInternal(pIMDInternalImport, riid, &pIMetaDataTables);
+		int result = GetMetaDataPublicInterfaceFromInternal(pIMDInternalImport, IID_IMetaDataTables, out nuint pIMetaDataTables);
 		return result == 0 ? GetManagedInterface<IMetaDataTables>(pIMetaDataTables) : null;
 	}
 
-	static int GetMetaDataPublicInterfaceFromInternal(void* pv, Guid* riid, void** ppv) {
-		return isClr2x ? GetMetaDataPublicInterfaceFromInternal2(pv, riid, ppv) : GetMetaDataPublicInterfaceFromInternal4(pv, riid, ppv);
+	static int GetMetaDataPublicInterfaceFromInternal(nuint pv, Guid riid, out nuint ppv) {
+		return isClr2x ? GetMetaDataPublicInterfaceFromInternal2(pv, riid, out ppv) : GetMetaDataPublicInterfaceFromInternal4(pv, riid, out ppv);
 	}
 
-	static T GetManagedInterface<T>(void* pIUnknown) where T : class {
-		if (pIUnknown == null)
+	static T GetManagedInterface<T>(nuint pIUnknown) where T : class {
+		if (pIUnknown == 0)
 			throw new ArgumentNullException(nameof(pIUnknown));
 
-		return (T)Marshal.GetObjectForIUnknown((IntPtr)pIUnknown);
+		return (T)Marshal.GetObjectForIUnknown((nint)pIUnknown);
 	}
 }

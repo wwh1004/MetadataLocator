@@ -1,25 +1,19 @@
 using System.Collections.Generic;
 
-namespace MetadataLocator.NativeSharp {
-	internal unsafe sealed class Pointer {
-		private void* _baseAddress;
-		private readonly List<uint> _offsets;
+namespace MetadataLocator.NativeSharp;
 
-		public void* BaseAddress {
-			get => _baseAddress;
-			set => _baseAddress = value;
-		}
+unsafe sealed class Pointer {
+	public void* BaseAddress { get; set; }
 
-		public IList<uint> Offsets => _offsets;
+	public IList<uint> Offsets { get; }
 
-		public Pointer(void* baseAddress, params uint[] offsets) {
-			_baseAddress = baseAddress;
-			_offsets = new List<uint>(offsets);
-		}
+	public Pointer(void* baseAddress, params uint[] offsets) {
+		BaseAddress = baseAddress;
+		Offsets = new List<uint>(offsets);
+	}
 
-		public Pointer(Pointer pointer) {
-			_baseAddress = pointer._baseAddress;
-			_offsets = new List<uint>(pointer._offsets);
-		}
+	public Pointer(Pointer pointer) {
+		BaseAddress = pointer.BaseAddress;
+		Offsets = new List<uint>(pointer.Offsets);
 	}
 }

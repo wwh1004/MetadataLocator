@@ -2,11 +2,12 @@
 	<PropertyGroup>
 		<Title>$(ProjectName)</Title>
 		<Version>1.0.0.0</Version>
-		<Copyright>Copyright © 2019-2021 Wwh</Copyright>
+		<Copyright>Copyright © 2019-2022 Wwh</Copyright>
 	</PropertyGroup>
 	<PropertyGroup>
 		<TargetFramework>net35</TargetFramework>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<LangVersion>10.0</LangVersion>
 		<OutputPath>..\bin\$(Configuration)</OutputPath>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>

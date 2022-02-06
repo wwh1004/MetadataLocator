@@ -1,117 +1,117 @@
 using System.Reflection;
 
-namespace MetadataLocator {
-	/// <summary>
-	/// Image layout
-	/// </summary>
-	public enum ImageLayout {
-		/// <summary>
-		/// Use this if the PE file has a normal structure (eg. it's been read from a file on disk)
-		/// </summary>
-		File,
+namespace MetadataLocator;
 
-		/// <summary>
-		/// Use this if the PE file has been loaded into memory by the OS PE file loader
-		/// </summary>
-		Memory
-	}
+/// <summary>
+/// Image layout
+/// </summary>
+public enum ImageLayout {
+	/// <summary>
+	/// Use this if the PE file has a normal structure (eg. it's been read from a file on disk)
+	/// </summary>
+	File,
 
 	/// <summary>
-	/// Metadata stream info
+	/// Use this if the PE file has been loaded into memory by the OS PE file loader
 	/// </summary>
-	public sealed unsafe class MetadataStreamInfo {
-		/// <summary>
-		/// Address of stream
-		/// </summary>
-		public void* Address;
+	Memory
+}
 
-		/// <summary>
-		/// Length of stream
-		/// </summary>
-		public uint Length;
-	}
+/// <summary>
+/// Metadata stream info
+/// </summary>
+public sealed unsafe class MetadataStreamInfo {
+	/// <summary>
+	/// Address of stream
+	/// </summary>
+	public void* Address;
 
 	/// <summary>
-	/// .NET PE Info
+	/// Length of stream
 	/// </summary>
-	public sealed unsafe class DotNetPEInfo {
-		/// <summary>
-		/// Determine if current instance is valid
-		/// </summary>
-		public bool IsValid;
+	public uint Length;
+}
 
-		/// <summary>
-		/// ImageLayout
-		/// </summary>
-		public ImageLayout ImageLayout;
-
-		/// <summary>
-		/// Address of COR20_HEADER
-		/// </summary>
-		public void* Cor20HeaderAddress;
-
-		/// <summary>
-		/// Address of metadata
-		/// </summary>
-		public void* MetadataAddress;
-
-		/// <summary>
-		/// Size of metadata
-		/// </summary>
-		public uint MetadataSize;
-	}
+/// <summary>
+/// .NET PE Info
+/// </summary>
+public sealed unsafe class DotNetPEInfo {
+	/// <summary>
+	/// Determine if current instance is valid
+	/// </summary>
+	public bool IsValid;
 
 	/// <summary>
-	/// Metadata info
+	/// ImageLayout
 	/// </summary>
-	public sealed class MetadataInfo {
-		/// <summary>
-		/// Module
-		/// </summary>
-		public Module Module;
+	public ImageLayout ImageLayout;
 
-		/// <summary>
-		/// The instance of <see cref="IMetaDataTables"/>
-		/// </summary>
-		public IMetaDataTables MetaDataTables;
+	/// <summary>
+	/// Address of COR20_HEADER
+	/// </summary>
+	public void* Cor20HeaderAddress;
 
-		/// <summary>
-		/// #~ or #- info
-		/// </summary>
-		public MetadataStreamInfo TableStream;
+	/// <summary>
+	/// Address of metadata
+	/// </summary>
+	public void* MetadataAddress;
 
-		/// <summary>
-		/// #Strings heap info
-		/// </summary>
-		public MetadataStreamInfo StringHeap;
+	/// <summary>
+	/// Size of metadata
+	/// </summary>
+	public uint MetadataSize;
+}
 
-		/// <summary>
-		/// #US heap info
-		/// </summary>
-		public MetadataStreamInfo UserStringHeap;
+/// <summary>
+/// Metadata info
+/// </summary>
+public sealed class MetadataInfo {
+	/// <summary>
+	/// Module
+	/// </summary>
+	public Module Module;
 
-		/// <summary>
-		/// #GUID heap info
-		/// </summary>
-		public MetadataStreamInfo GuidHeap;
+	/// <summary>
+	/// The instance of <see cref="IMetaDataTables"/>
+	/// </summary>
+	public IMetaDataTables MetaDataTables;
 
-		/// <summary>
-		/// #Blob heap info
-		/// </summary>
-		public MetadataStreamInfo BlobHeap;
+	/// <summary>
+	/// #~ or #- info
+	/// </summary>
+	public MetadataStreamInfo TableStream;
 
-		/// <summary>
-		/// .NET PE Info (invalid if PEInfo.IsNativeImage is true)
-		/// </summary>
-		public DotNetPEInfo PEInfo;
+	/// <summary>
+	/// #Strings heap info
+	/// </summary>
+	public MetadataStreamInfo StringHeap;
 
-		/// <summary>
-		/// Get the metadata info of a module
-		/// </summary>
-		/// <param name="module"></param>
-		/// <returns></returns>
-		public static MetadataInfo GetMetadataInfo(Module module) {
-			return MetadataInfoImpl.GetMetadataInfo(module);
-		}
+	/// <summary>
+	/// #US heap info
+	/// </summary>
+	public MetadataStreamInfo UserStringHeap;
+
+	/// <summary>
+	/// #GUID heap info
+	/// </summary>
+	public MetadataStreamInfo GuidHeap;
+
+	/// <summary>
+	/// #Blob heap info
+	/// </summary>
+	public MetadataStreamInfo BlobHeap;
+
+	/// <summary>
+	/// .NET PE Info (invalid if PEInfo.IsNativeImage is true)
+	/// </summary>
+	public DotNetPEInfo PEInfo;
+
+	/// <summary>
+	/// Get the metadata info of a module
+	/// </summary>
+	/// <param name="module"></param>
+	/// <returns></returns>
+	public static MetadataInfo GetMetadataInfo(Module module) {
+		return MetadataInfoImpl.GetMetadataInfo(module);
 	}
 }

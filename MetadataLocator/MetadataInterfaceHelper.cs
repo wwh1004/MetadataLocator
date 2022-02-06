@@ -3,58 +3,58 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using static MetadataLocator.NativeMethods;
 
-namespace MetadataLocator {
+namespace MetadataLocator;
+
+/// <summary>
+/// Metadata interface helper
+/// </summary>
+public static unsafe class MetadataInterfaceHelper {
+	static readonly bool isClr2x;
+	static readonly MethodInfo getMetadataImport;
+
+	static MetadataInterfaceHelper() {
+		isClr2x = Environment.Version.Major == 2;
+		getMetadataImport = typeof(ModuleHandle).GetMethod("_GetMetadataImport", isClr2x ? BindingFlags.NonPublic | BindingFlags.Instance : BindingFlags.NonPublic | BindingFlags.Static);
+	}
+
 	/// <summary>
-	/// Metadata interface helper
+	/// A wrapper for _GetMetadataImport
 	/// </summary>
-	public static unsafe class MetadataInterfaceHelper {
-		private static readonly bool _isClr2x;
-		private static readonly MethodInfo _getMetadataImport;
+	/// <param name="module"></param>
+	/// <returns></returns>
+	public static void* GetMetadataImport(Module module) {
+		if (module is null)
+			throw new ArgumentNullException(nameof(module));
 
-		static MetadataInterfaceHelper() {
-			_isClr2x = Environment.Version.Major == 2;
-			_getMetadataImport = typeof(ModuleHandle).GetMethod("_GetMetadataImport", _isClr2x ? BindingFlags.NonPublic | BindingFlags.Instance : BindingFlags.NonPublic | BindingFlags.Static);
-		}
+		return isClr2x
+			? Pointer.Unbox(getMetadataImport.Invoke(module.ModuleHandle, null))
+			: (void*)(IntPtr)getMetadataImport.Invoke(null, new object[] { module });
+	}
 
-		/// <summary>
-		/// A wrapper for _GetMetadataImport
-		/// </summary>
-		/// <param name="module"></param>
-		/// <returns></returns>
-		public static void* GetMetadataImport(Module module) {
-			if (module is null)
-				throw new ArgumentNullException(nameof(module));
+	/// <summary>
+	/// Get the instance of <see cref="IMetaDataTables"/> from IMDInternalImport
+	/// </summary>
+	/// <param name="pIMDInternalImport">A pointer to the instance of IMDInternalImport</param>
+	/// <returns></returns>
+	public static IMetaDataTables GetIMetaDataTables(void* pIMDInternalImport) {
+		if (pIMDInternalImport == null)
+			throw new ArgumentNullException(nameof(pIMDInternalImport));
 
-			return _isClr2x
-				? Pointer.Unbox(_getMetadataImport.Invoke(module.ModuleHandle, null))
-				: (void*)(IntPtr)_getMetadataImport.Invoke(null, new object[] { module });
-		}
+		int result;
+		void* pIMetaDataTables;
+		fixed (Guid* riid = &IID_IMetaDataTables)
+			result = GetMetaDataPublicInterfaceFromInternal(pIMDInternalImport, riid, &pIMetaDataTables);
+		return result == 0 ? GetManagedInterface<IMetaDataTables>(pIMetaDataTables) : null;
+	}
 
-		/// <summary>
-		/// Get the instance of <see cref="IMetaDataTables"/> from IMDInternalImport
-		/// </summary>
-		/// <param name="pIMDInternalImport">A pointer to the instance of IMDInternalImport</param>
-		/// <returns></returns>
-		public static IMetaDataTables GetIMetaDataTables(void* pIMDInternalImport) {
-			if (pIMDInternalImport == null)
-				throw new ArgumentNullException(nameof(pIMDInternalImport));
+	static int GetMetaDataPublicInterfaceFromInternal(void* pv, Guid* riid, void** ppv) {
+		return isClr2x ? GetMetaDataPublicInterfaceFromInternal2(pv, riid, ppv) : GetMetaDataPublicInterfaceFromInternal4(pv, riid, ppv);
+	}
 
-			int result;
-			void* pIMetaDataTables;
-			fixed (Guid* riid = &IID_IMetaDataTables)
-				result = GetMetaDataPublicInterfaceFromInternal(pIMDInternalImport, riid, &pIMetaDataTables);
-			return result == 0 ? GetManagedInterface<IMetaDataTables>(pIMetaDataTables) : null;
-		}
+	static T GetManagedInterface<T>(void* pIUnknown) where T : class {
+		if (pIUnknown == null)
+			throw new ArgumentNullException(nameof(pIUnknown));
 
-		private static int GetMetaDataPublicInterfaceFromInternal(void* pv, Guid* riid, void** ppv) {
-			return _isClr2x ? GetMetaDataPublicInterfaceFromInternal2(pv, riid, ppv) : GetMetaDataPublicInterfaceFromInternal4(pv, riid, ppv);
-		}
-
-		private static T GetManagedInterface<T>(void* pIUnknown) where T : class {
-			if (pIUnknown == null)
-				throw new ArgumentNullException(nameof(pIUnknown));
-
-			return (T)Marshal.GetObjectForIUnknown((IntPtr)pIUnknown);
-		}
+		return (T)Marshal.GetObjectForIUnknown((IntPtr)pIUnknown);
 	}
 }

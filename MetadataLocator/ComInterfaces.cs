@@ -2,67 +2,67 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace MetadataLocator {
-	[ComImport]
-	[Guid("D8F579AB-402D-4B8E-82D9-5D63B1065C68")]
-	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-	public unsafe interface IMetaDataTables {
-		[PreserveSig]
-		int GetStringHeapSize(out uint pcbStrings);
+namespace MetadataLocator;
 
-		[PreserveSig]
-		int GetBlobHeapSize(out uint pcbBlobs);
+[ComImport]
+[Guid("D8F579AB-402D-4B8E-82D9-5D63B1065C68")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public unsafe interface IMetaDataTables {
+	[PreserveSig]
+	int GetStringHeapSize(out uint pcbStrings);
 
-		[PreserveSig]
-		int GetGuidHeapSize(out uint pcbGuids);
+	[PreserveSig]
+	int GetBlobHeapSize(out uint pcbBlobs);
 
-		[PreserveSig]
-		int GetUserStringHeapSize(out uint pcbBlobs);
+	[PreserveSig]
+	int GetGuidHeapSize(out uint pcbGuids);
 
-		[PreserveSig]
-		int GetNumTables(out uint pcTables);
+	[PreserveSig]
+	int GetUserStringHeapSize(out uint pcbBlobs);
 
-		[PreserveSig]
-		int GetTableIndex(uint token, out uint pixTbl);
+	[PreserveSig]
+	int GetNumTables(out uint pcTables);
 
-		[PreserveSig]
-		int GetTableInfo(uint ixTbl, out uint pcbRow, out uint pcRows, out uint pcCols, out uint piKey, out void* ppName);
+	[PreserveSig]
+	int GetTableIndex(uint token, out uint pixTbl);
 
-		[PreserveSig]
-		int GetColumnInfo(uint ixTbl, uint ixCol, out uint poCol, out uint pcbCol, out uint pType, out void* ppName);
+	[PreserveSig]
+	int GetTableInfo(uint ixTbl, out uint pcbRow, out uint pcRows, out uint pcCols, out uint piKey, out void* ppName);
 
-		[PreserveSig]
-		int GetCodedTokenInfo(uint ixCdTkn, out uint pcTokens, out void* ppTokens, out void* ppName);
+	[PreserveSig]
+	int GetColumnInfo(uint ixTbl, uint ixCol, out uint poCol, out uint pcbCol, out uint pType, out void* ppName);
 
-		[PreserveSig]
-		int GetRow(uint ixTbl, uint rid, out void* ppRow);
+	[PreserveSig]
+	int GetCodedTokenInfo(uint ixCdTkn, out uint pcTokens, out void* ppTokens, out void* ppName);
 
-		[PreserveSig]
-		int GetColumn(uint ixTbl, uint ixCol, uint rid, out uint pVal);
+	[PreserveSig]
+	int GetRow(uint ixTbl, uint rid, out void* ppRow);
 
-		[PreserveSig]
-		int GetString(uint ixString, out void* ppString);
+	[PreserveSig]
+	int GetColumn(uint ixTbl, uint ixCol, uint rid, out uint pVal);
 
-		[PreserveSig]
-		int GetBlob(uint ixBlob, out uint pcbData, out void* ppData);
+	[PreserveSig]
+	int GetString(uint ixString, out void* ppString);
 
-		[PreserveSig]
-		int GetGuid(uint ixGuid, out void* ppGUID);
+	[PreserveSig]
+	int GetBlob(uint ixBlob, out uint pcbData, out void* ppData);
 
-		[PreserveSig]
-		int GetUserString(uint ixUserString, out uint pcbData, out void* ppData);
+	[PreserveSig]
+	int GetGuid(uint ixGuid, out void* ppGUID);
 
-		[PreserveSig]
-		int GetNextString(uint ixString, out uint pNext);
+	[PreserveSig]
+	int GetUserString(uint ixUserString, out uint pcbData, out void* ppData);
 
-		[PreserveSig]
-		int GetNextBlob(uint ixBlob, out uint pNext);
+	[PreserveSig]
+	int GetNextString(uint ixString, out uint pNext);
 
-		[PreserveSig]
-		int GetNextGuid(uint ixGuid, out uint pNext);
+	[PreserveSig]
+	int GetNextBlob(uint ixBlob, out uint pNext);
 
-		[PreserveSig]
-		int GetNextUserString(uint ixUserString, out uint pNext);
-	}
+	[PreserveSig]
+	int GetNextGuid(uint ixGuid, out uint pNext);
+
+	[PreserveSig]
+	int GetNextUserString(uint ixUserString, out uint pNext);
 }
 #pragma warning restore CS1591

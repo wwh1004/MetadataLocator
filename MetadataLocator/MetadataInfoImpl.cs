@@ -304,7 +304,7 @@ static unsafe class DotNetPEInfoImpl {
 		// Module.m_file
 		var m_identityOffsets = sizeof(nuint) == 4 ? new uint[] { 0x8 } : new uint[] { 0x10 };
 		// PEFile.m_openedILimage
-		var unknownOffset1s = Enumerable.Range(0, (0x80 - 0x20) / 4).Select(t => 0x20 + ((uint)t * 4)).ToArray();
+		var unknownOffset1s = Enumerable.Range(0, (0x100 - 0x20) / 4).Select(t => 0x20 + ((uint)t * 4)).ToArray();
 		// PEImage.????
 		var m_pCorHeaderOffsets = sizeof(nuint) == 4 ? new uint[] { 0x14 } : new uint[] { 0x20 };
 		// PEDecoder.m_pCorHeader

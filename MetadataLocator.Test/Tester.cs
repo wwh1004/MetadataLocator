@@ -27,7 +27,7 @@ public static unsafe class Tester {
 			Console.WriteLine("Not exists.");
 		}
 		else {
-			Console.WriteLine($"Address: 0x{((nuint)streamInfo.Address).ToHexString()}");
+			Console.WriteLine($"Address: 0x{streamInfo.Address.ToHexString()}");
 			Console.WriteLine($"Length: 0x0{streamInfo.Length:X8}");
 		}
 		Console.WriteLine();

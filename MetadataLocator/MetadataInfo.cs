@@ -20,7 +20,7 @@ public enum ImageLayout {
 /// <summary>
 /// Metadata stream info
 /// </summary>
-public sealed class MetadataStreamInfo {
+public abstract class MetadataStreamInfo {
 	/// <summary>
 	/// Address of stream
 	/// </summary>
@@ -33,13 +33,53 @@ public sealed class MetadataStreamInfo {
 }
 
 /// <summary>
+/// Metadata table info (#~, #-)
+/// </summary>
+public sealed class MetadataTableInfo : MetadataStreamInfo {
+	/// <summary>
+	/// Empty instance
+	/// </summary>
+	public static readonly MetadataTableInfo Empty = new();
+
+	/// <summary>
+	/// Determine if current instance is invalid
+	/// </summary>
+	public bool IsInvalid => this == Empty;
+
+	/// <summary>
+	/// Is compressed table stream (#~)
+	/// </summary>
+	public bool IsCompressed;
+}
+
+/// <summary>
+/// Metadata heap info (#Strings, #US, #GUID, #Blob)
+/// </summary>
+public sealed class MetadataHeapInfo : MetadataStreamInfo {
+	/// <summary>
+	/// Empty instance
+	/// </summary>
+	public static readonly MetadataHeapInfo Empty = new();
+
+	/// <summary>
+	/// Determine if current instance is invalid
+	/// </summary>
+	public bool IsInvalid => this == Empty;
+}
+
+/// <summary>
 /// .NET PE Info
 /// </summary>
 public sealed class DotNetPEInfo {
 	/// <summary>
-	/// Determine if current instance is valid
+	/// Empty instance
 	/// </summary>
-	public bool IsValid;
+	public static readonly DotNetPEInfo Empty = new();
+
+	/// <summary>
+	/// Determine if current instance is invalid
+	/// </summary>
+	public bool IsInvalid => this == Empty;
 
 	/// <summary>
 	/// ImageLayout
@@ -60,6 +100,15 @@ public sealed class DotNetPEInfo {
 	/// Size of metadata
 	/// </summary>
 	public uint MetadataSize;
+
+	/// <summary>
+	/// Get the .NET PE info of a module
+	/// </summary>
+	/// <param name="module"></param>
+	/// <returns></returns>
+	public static DotNetPEInfo Create(Module module) {
+		return DotNetPEInfoImpl.GetDotNetPEInfo(module);
+	}
 }
 
 /// <summary>
@@ -67,51 +116,56 @@ public sealed class DotNetPEInfo {
 /// </summary>
 public sealed class MetadataInfo {
 	/// <summary>
-	/// Module
+	/// Empty instance
 	/// </summary>
-	public Module Module;
+	public static readonly MetadataInfo Empty = new();
 
 	/// <summary>
-	/// The instance of <see cref="IMetaDataTables"/>
+	/// Determine if current instance is invalid
 	/// </summary>
-	public IMetaDataTables MetaDataTables;
+	public bool IsInvalid => this == Empty;
+
+	/// <summary>
+	/// The instance of <see cref="MetadataLocator.MetadataImport"/>
+	/// </summary>
+	public MetadataImport MetadataImport = MetadataImport.Empty;
 
 	/// <summary>
 	/// #~ or #- info
 	/// </summary>
-	public MetadataStreamInfo TableStream;
+	public MetadataTableInfo TableStream = MetadataTableInfo.Empty;
 
 	/// <summary>
 	/// #Strings heap info
 	/// </summary>
-	public MetadataStreamInfo StringHeap;
+	public MetadataHeapInfo StringHeap = MetadataHeapInfo.Empty;
 
 	/// <summary>
 	/// #US heap info
 	/// </summary>
-	public MetadataStreamInfo UserStringHeap;
+	public MetadataHeapInfo UserStringHeap = MetadataHeapInfo.Empty;
 
 	/// <summary>
 	/// #GUID heap info
 	/// </summary>
-	public MetadataStreamInfo GuidHeap;
+	public MetadataHeapInfo GuidHeap = MetadataHeapInfo.Empty;
 
 	/// <summary>
 	/// #Blob heap info
 	/// </summary>
-	public MetadataStreamInfo BlobHeap;
+	public MetadataHeapInfo BlobHeap = MetadataHeapInfo.Empty;
 
 	/// <summary>
-	/// .NET PE Info (invalid if PEInfo.IsNativeImage is true)
+	/// .NET PE Info
 	/// </summary>
-	public DotNetPEInfo PEInfo;
+	public DotNetPEInfo PEInfo = DotNetPEInfo.Empty;
 
 	/// <summary>
 	/// Get the metadata info of a module
 	/// </summary>
 	/// <param name="module"></param>
 	/// <returns></returns>
-	public static MetadataInfo GetMetadataInfo(Module module) {
+	public static MetadataInfo Create(Module module) {
 		return MetadataInfoImpl.GetMetadataInfo(module);
 	}
 }

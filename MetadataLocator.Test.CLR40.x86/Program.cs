@@ -1,3 +1,3 @@
 using MetadataLocator.Test;
 
-Tester.Test();
+TestDriver.Test();

@@ -8,6 +8,7 @@
 		<TargetFramework>net35</TargetFramework>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>10.0</LangVersion>
+		<Nullable>enable</Nullable>
 		<OutputPath>..\bin\$(Configuration)</OutputPath>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

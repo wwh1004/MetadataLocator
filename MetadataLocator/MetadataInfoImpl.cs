@@ -1,12 +1,8 @@
 using System;
-using System.CodeDom;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using MetadataLocator.NativeSharp;
-using Pointer = MetadataLocator.NativeSharp.Pointer;
 
 namespace MetadataLocator;
 
@@ -15,13 +11,9 @@ static unsafe class MetadataInfoImpl {
 		if (module is null)
 			throw new ArgumentNullException(nameof(module));
 
-		var metaDataTables = MetadataInterfaceHelper.GetIMetaDataTables(MetadataInterfaceHelper.GetMetadataImport(module));
-		if (metaDataTables is null)
-			throw new InvalidOperationException();
-		var metadataInfo = new MetadataInfo {
-			Module = module,
-			MetaDataTables = metaDataTables
-		};
+		_ = RuntimeEnvironment.Version;
+		throw new NotImplementedException();
+		var metadataInfo = new MetadataInfo();
 		metadataInfo.TableStream = GetTableStream(metadataInfo);
 		metadataInfo.StringHeap = GetStringHeap(metadataInfo);
 		metadataInfo.UserStringHeap = GetUserStringHeap(metadataInfo);
@@ -31,69 +23,24 @@ static unsafe class MetadataInfoImpl {
 		return metadataInfo;
 	}
 
-	static MetadataStreamInfo GetTableStream(MetadataInfo metadataInfo) {
-		ThrowOnError(metadataInfo.MetaDataTables.GetNumTables(out uint tableCount));
-		uint tablesSize = 0;
-		uint validTableCount = 0;
-		for (uint i = 0; i < tableCount; i++) {
-			ThrowOnError(metadataInfo.MetaDataTables.GetTableInfo(i, out uint rowSize, out uint rowCount, out _, out _, out _));
-			if (rowCount == 0)
-				continue;
-			tablesSize += rowSize * rowCount;
-			validTableCount++;
-		}
-		uint headerSize = 0x18 + (validTableCount * 4);
-		ThrowOnError(metadataInfo.MetaDataTables.GetRow(0, 1, out nuint address));
-		return new MetadataStreamInfo {
-			Address = address - headerSize,
-			Length = AlignUp(headerSize + tablesSize, 4)
-		};
+	static MetadataTableInfo GetTableStream(MetadataInfo metadataInfo) {
+		throw new NotImplementedException();
 	}
 
-	static MetadataStreamInfo GetStringHeap(MetadataInfo metadataInfo) {
-		ThrowOnError(metadataInfo.MetaDataTables.GetStringHeapSize(out uint streamSize));
-		if (streamSize == 1)
-			return null;
-		// 表示流不存在，1只是用来占位
-		int result = metadataInfo.MetaDataTables.GetString(0, out nuint pData);
-		return result == 0 ? new MetadataStreamInfo {
-			Address = pData,
-			Length = AlignUp(streamSize, 4)
-		} : null;
+	static MetadataHeapInfo GetStringHeap(MetadataInfo metadataInfo) {
+		throw new NotImplementedException();
 	}
 
-	static MetadataStreamInfo GetUserStringHeap(MetadataInfo metadataInfo) {
-		ThrowOnError(metadataInfo.MetaDataTables.GetUserStringHeapSize(out uint streamSize));
-		if (streamSize == 1)
-			return null;
-		int result = metadataInfo.MetaDataTables.GetUserString(1, out uint dataSize, out nuint pData);
-		// #US与#Blob堆传入ixXXX=0都会导致获取到的pData不是真实地址，所以获取第2个数据的地址
-		return result == 0 ? new MetadataStreamInfo {
-			Address = pData - GetCompressedUInt32Length(dataSize) - 1,
-			Length = AlignUp(streamSize, 4)
-		} : null;
+	static MetadataHeapInfo GetUserStringHeap(MetadataInfo metadataInfo) {
+		throw new NotImplementedException();
 	}
 
-	static MetadataStreamInfo GetGuidHeap(MetadataInfo metadataInfo) {
-		ThrowOnError(metadataInfo.MetaDataTables.GetGuidHeapSize(out uint streamSize));
-		if (streamSize == 1)
-			return null;
-		int result = metadataInfo.MetaDataTables.GetGuid(1, out nuint pData);
-		return result == 0 ? new MetadataStreamInfo {
-			Address = pData,
-			Length = AlignUp(streamSize, 4)
-		} : null;
+	static MetadataHeapInfo GetGuidHeap(MetadataInfo metadataInfo) {
+		throw new NotImplementedException();
 	}
 
-	static MetadataStreamInfo GetBlobHeap(MetadataInfo metadataInfo) {
-		ThrowOnError(metadataInfo.MetaDataTables.GetBlobHeapSize(out uint streamSize));
-		if (streamSize == 1)
-			return null;
-		int result = metadataInfo.MetaDataTables.GetBlob(1, out uint dataSize, out nuint pData);
-		return result == 0 ? new MetadataStreamInfo {
-			Address = pData - GetCompressedUInt32Length(dataSize) - 1,
-			Length = AlignUp(streamSize, 4)
-		} : null;
+	static MetadataHeapInfo GetBlobHeap(MetadataInfo metadataInfo) {
+		throw new NotImplementedException();
 	}
 
 	static uint AlignUp(uint value, uint alignment) {
@@ -108,129 +55,57 @@ static unsafe class MetadataInfoImpl {
 		else
 			return 4;
 	}
-
-	static void ThrowOnError(int result) {
-		if (result != 0)
-			throw new InvalidOperationException();
-	}
 }
 
 static unsafe class DotNetPEInfoImpl {
-	static FieldInfo moduleHandleField;
-	static nuint[] testModuleHandles;
-	static nuint[] testMemoryModuleHandles;
-	static Pointer cor20HeaderAddressPointerTemplate;
-	static Pointer metadataAddressPointerTemplate;
-	static Pointer metadataSizePointerTemplate;
+	static Pointer Cor20HeaderAddressPointer = Pointer.Empty; // from IMAGE_LOADED
+	static Pointer MetadataAddressPointer_RO = Pointer.Empty;
+	static Pointer MetadataSizePointer_RO = Pointer.Empty;
+	static nuint MDInternalRO_Vfptr;
+	static Pointer MetadataAddressPointer_RW = Pointer.Empty;
+	static Pointer MetadataSizePointer_RW = Pointer.Empty;
+	static nuint MDInternalRW_Vfptr;
+	static bool isInitialized;
 
-	static FieldInfo ModuleHandleField {
-		get {
-			if (moduleHandleField == null) {
-				switch (Environment.Version.Major) {
-				case 2:
-					moduleHandleField = typeof(ModuleHandle).GetField("m_ptr", BindingFlags.NonPublic | BindingFlags.Instance);
-					break;
-				case 4:
-					moduleHandleField = typeof(object).Module.GetType("System.Reflection.RuntimeModule").GetField("m_pData", BindingFlags.NonPublic | BindingFlags.Instance);
-					break;
-				default:
-					throw new NotSupportedException();
-				}
-			}
-			return moduleHandleField;
-		}
-	}
+	static void Initialize() {
+		if (isInitialized)
+			return;
 
-	static nuint[] TestModuleHandles {
-		get {
-			if (testModuleHandles == null) {
-				var testModuleHandles = Enumerable.Range(0, 3).Select(t => GetModuleHandle(GenerateAssembly(false).ManifestModule)).ToArray();
-				DotNetPEInfoImpl.testModuleHandles = new nuint[testModuleHandles.Length];
-				for (int i = 0; i < testModuleHandles.Length; i++)
-					DotNetPEInfoImpl.testModuleHandles[i] = testModuleHandles[i];
-			}
-			return testModuleHandles;
-		}
-	}
-
-	static nuint[] TestMemoryModuleHandles {
-		get {
-			if (testMemoryModuleHandles == null) {
-				var testModuleHandles = Enumerable.Range(0, 3).Select(t => GetModuleHandle(GenerateAssembly(true).ManifestModule)).ToArray();
-				testMemoryModuleHandles = new nuint[testModuleHandles.Length];
-				for (int i = 0; i < testModuleHandles.Length; i++)
-					testMemoryModuleHandles[i] = testModuleHandles[i];
-			}
-			return testMemoryModuleHandles;
-		}
-	}
-
-	static Pointer Cor20HeaderAddressPointerTemplate {
-		get {
-			if (cor20HeaderAddressPointerTemplate == null) {
-				cor20HeaderAddressPointerTemplate = GetFirstValidTemplate(ScanCor20HeaderAddressPointerTemplates(), pCorHeader => CheckCor20HeaderAddressPointer(pCorHeader));
-				if (cor20HeaderAddressPointerTemplate == null)
-					throw new InvalidOperationException();
-			}
-			return cor20HeaderAddressPointerTemplate;
-		}
-	}
-
-	static Pointer MetadataAddressPointerTemplate {
-		get {
-			if (metadataAddressPointerTemplate == null) {
-				metadataAddressPointerTemplate = GetFirstValidTemplate(ScanMetadataAddressPointerTemplates(), pMetadata => CheckMetadataAddressPointer(pMetadata));
-				if (metadataAddressPointerTemplate == null)
-					throw new InvalidOperationException();
-			}
-			return metadataAddressPointerTemplate;
-		}
-	}
-
-	static Pointer MetadataSizePointerTemplate {
-		get {
-			if (metadataSizePointerTemplate == null) {
-				metadataSizePointerTemplate = new Pointer(MetadataAddressPointerTemplate);
-				var offsets = metadataSizePointerTemplate.Offsets;
-				offsets[offsets.Count - 1] += (uint)sizeof(nuint);
-			}
-			return metadataSizePointerTemplate;
-		}
+		Cor20HeaderAddressPointer = ScanCor20HeaderAddressPointer();
+		Debug2.Assert(!Cor20HeaderAddressPointer.IsEmpty);
+		MetadataAddressPointer_RO = ScanMetadataAddressPointer(false, out MDInternalRO_Vfptr);
+		Debug2.Assert(!MetadataAddressPointer_RO.IsEmpty);
+		MetadataSizePointer_RO = new Pointer(MetadataAddressPointer_RO);
+		MetadataSizePointer_RO.Offsets[MetadataSizePointer_RO.Offsets.Count - 1] += (uint)sizeof(nuint);
+		MetadataAddressPointer_RW = ScanMetadataAddressPointer(true, out MDInternalRW_Vfptr);
+		Debug2.Assert(!MetadataAddressPointer_RW.IsEmpty);
+		MetadataSizePointer_RW = new Pointer(MetadataAddressPointer_RW);
+		MetadataSizePointer_RW.Offsets[MetadataSizePointer_RW.Offsets.Count - 1] += (uint)sizeof(nuint);
+		isInitialized = true;
 	}
 
 	public static DotNetPEInfo GetDotNetPEInfo(Module module) {
 		if (module is null)
 			throw new ArgumentNullException(nameof(module));
 
-		var peInfo = new DotNetPEInfo {
-			IsValid = !IsNativeImage(module)
-		};
-		if (!peInfo.IsValid)
-			return peInfo;
-		nuint moduleHandle = GetModuleHandle(module);
-		try {
-			// 如果是#-表流，会出错，暂时不支持#-表流
-			peInfo.Cor20HeaderAddress = ReadIntPtr(MakePointer(Cor20HeaderAddressPointerTemplate, moduleHandle));
-			peInfo.MetadataAddress = ReadIntPtr(MakePointer(MetadataAddressPointerTemplate, moduleHandle));
-			peInfo.MetadataSize = ReadUInt32(MakePointer(MetadataSizePointerTemplate, moduleHandle));
+		Initialize();
+		var peInfo = new DotNetPEInfo();
+		nuint moduleHandle = ReflectionHelpers.GetModuleHandle(module);
+		peInfo.Cor20HeaderAddress = ReadUIntPtr(Cor20HeaderAddressPointer, moduleHandle);
+		nuint vfptr = MetadataImport.Create(module).Vfptr;
+		if (vfptr == MDInternalRO_Vfptr) {
+			peInfo.MetadataAddress = ReadUIntPtr(MetadataAddressPointer_RO, moduleHandle);
+			peInfo.MetadataSize = ReadUInt32(MetadataSizePointer_RO, moduleHandle);
 		}
-		catch {
-			peInfo.IsValid = false;
-			return peInfo;
+		else if (vfptr == MDInternalRW_Vfptr) {
+			peInfo.MetadataAddress = ReadUIntPtr(MetadataAddressPointer_RW, moduleHandle);
+			peInfo.MetadataSize = ReadUInt32(MetadataSizePointer_RW, moduleHandle);
+		}
+		else {
+			Debug2.Assert(false);
 		}
 		peInfo.ImageLayout = GetImageLayout(module);
 		return peInfo;
-	}
-
-	static bool IsNativeImage(Module module) {
-		try {
-			string moduleName = Path.GetFileName(module.Assembly.Location);
-			moduleName = Path.GetFileNameWithoutExtension(moduleName) + ".ni" + Path.GetExtension(moduleName);
-			return NativeProcess.GetModule(moduleName) != 0;
-		}
-		catch {
-			return false;
-		}
 	}
 
 	static ImageLayout GetImageLayout(Module module) {
@@ -240,180 +115,273 @@ static unsafe class DotNetPEInfoImpl {
 		return ImageLayout.Memory;
 	}
 
-	static uint ReadUInt32(Pointer pointer) {
-		if (!TryToAddress(pointer, out nuint address))
-			return default;
-		if (!TryReadUInt32(address, out uint value))
-			return default;
-		return value;
-	}
+	static Pointer ScanCor20HeaderAddressPointer() {
+		int dummy = 0;
+		var assembly = TestAssemblyManager.GetAssembly(0);
+		nuint module = assembly.ModuleHandle;
+		// must be a loaded layout (load from file not memory)
+		Check((RuntimeDefinitions.Module*)module);
 
-	static nuint ReadIntPtr(Pointer pointer) {
-		if (!TryToAddress(pointer, out nuint address))
-			return default;
-		if (!TryReadIntPtr(address, out nuint value))
-			return default;
-		return value;
-	}
-
-	static Assembly GenerateAssembly(bool isInMemory) {
-		using var provider = CodeDomProvider.CreateProvider("cs");
-		var options = new CompilerParameters {
-			GenerateExecutable = false,
-			OutputAssembly = Path.Combine(Path.GetTempPath(), $"___{Guid.NewGuid()}.dll")
-		};
-		var assembly = new CodeCompileUnit();
-		var @namespace = new CodeNamespace("ns1");
-		assembly.Namespaces.Add(@namespace);
-		// write namespace
-		var @class = new CodeTypeDeclaration("class1");
-		@namespace.Types.Add(@class);
-		// write class
-		@class.Members.Add(new CodeMemberMethod() {
-			Name = "method1"
-		});
-		// write method
-		var results = provider.CompileAssemblyFromDom(options, assembly);
-		var compiledAssembly = isInMemory ? Assembly.Load(File.ReadAllBytes(results.PathToAssembly)) : Assembly.LoadFile(results.PathToAssembly);
-		return compiledAssembly;
-	}
-
-	static Pointer GetFirstValidTemplate(List<Pointer> templates, Predicate<nuint> checker) {
-		foreach (var template in templates) {
-			foreach (nuint moduleHandle in TestModuleHandles) {
-				if (!TryToAddress(MakePointer(template, moduleHandle), out nuint address) || !TryReadIntPtr(address, out nuint value) || !checker(value))
-					goto next;
-			}
-			foreach (nuint moduleHandle in TestMemoryModuleHandles) {
-				if (!TryToAddress(MakePointer(template, moduleHandle), out nuint address) || !TryReadIntPtr(address, out nuint value) || !checker(value))
-					goto next;
-			}
-			return template;
-		next:
-			continue;
-		}
-		return null;
-	}
-
-	static Pointer MakePointer(Pointer template, nuint moduleHandle) {
-		return new Pointer(template) { BaseAddress = moduleHandle };
-	}
-
-	static List<Pointer> ScanCor20HeaderAddressPointerTemplates() {
-		var m_fileOffsets = sizeof(nuint) == 4 ? new uint[] { 0x4, 0x8 } : new uint[] { 0x8, 0x10 };
+		uint m_file_Offset;
+		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453)
+			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_453*)&dummy)->m_file) - (nuint)(&dummy));
+		else
+			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_20*)&dummy)->m_file) - (nuint)(&dummy));
+		nuint m_file = *(nuint*)(module + m_file_Offset);
+		Check((RuntimeDefinitions.PEFile*)m_file);
 		// Module.m_file
-		var m_identityOffsets = sizeof(nuint) == 4 ? new uint[] { 0x8 } : new uint[] { 0x10 };
+
+		uint m_openedILimage_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEFile*)&dummy)->m_openedILimage) - (nuint)(&dummy));
+		nuint m_openedILimage = *(nuint*)(m_file + m_openedILimage_Offset);
+		Check((RuntimeDefinitions.PEImage*)m_openedILimage);
 		// PEFile.m_openedILimage
-		var unknownOffset1s = Enumerable.Range(0, (0x100 - 0x20) / 4).Select(t => 0x20 + ((uint)t * 4)).ToArray();
-		// PEImage.????
-		var m_pCorHeaderOffsets = sizeof(nuint) == 4 ? new uint[] { 0x14 } : new uint[] { 0x20 };
-		// PEDecoder.m_pCorHeader
-		var offsetMatrix = new uint[][] {
-			m_fileOffsets,
-			m_identityOffsets,
-			unknownOffset1s,
-			m_pCorHeaderOffsets
-		};
-		return ScanPointerTemplates(TestModuleHandles[0], offsetMatrix, pCorHeader => CheckCor20HeaderAddressPointer(pCorHeader));
+
+		nuint m_pMDImport = MetadataImport.Create(assembly.Module).This;
+		uint m_pMDImport_Offset;
+		bool found = false;
+		for (m_pMDImport_Offset = 0x40; m_pMDImport_Offset < 0xD0; m_pMDImport_Offset += 4) {
+			if (*(nuint*)(m_openedILimage + m_pMDImport_Offset) != m_pMDImport)
+				continue;
+			found = true;
+			break;
+		}
+		Check(found);
+		// PEFile.m_pMDImport (not use, just for locating previous member 'm_pLayouts')
+		uint m_pLayouts_Loaded_Offset = m_pMDImport_Offset - 4 - (uint)sizeof(nuint);
+		uint m_pLayouts_Loaded_Offset_Min = m_pLayouts_Loaded_Offset - (4 * (uint)sizeof(nuint));
+		found = false;
+		for (; m_pLayouts_Loaded_Offset >= m_pLayouts_Loaded_Offset_Min; m_pLayouts_Loaded_Offset -= 4) {
+			var m_pLayout = *(RuntimeDefinitions.PEImageLayout**)(m_openedILimage + m_pLayouts_Loaded_Offset);
+			if (!Memory.TryReadUIntPtr((nuint)m_pLayout, out _))
+				continue;
+			if (!Memory.TryReadUIntPtr(m_pLayout->__vfptr, out _))
+				continue;
+			nuint actualModuleBase = ReflectionHelpers.GetNativeModuleHandle(assembly.Module);
+			if (actualModuleBase != m_pLayout->__base.m_base)
+				continue;
+			var m_pLayout2 = *(RuntimeDefinitions.PEImageLayout**)(m_openedILimage + m_pLayouts_Loaded_Offset - (uint)sizeof(nuint));
+			Console.WriteLine($"{(uint)m_pLayout->__vfptr:X8} {(uint)m_pLayout2->__vfptr:X8}");
+			found = true;
+			break;
+		}
+		Check(found);
+		nuint m_pLayouts_Loaded = *(nuint*)(m_openedILimage + m_pLayouts_Loaded_Offset);
+		Check((RuntimeDefinitions.PEImageLayout*)m_pLayouts_Loaded);
+		// PEImage.m_pLayouts[IMAGE_LOADED]
+
+		uint m_pCorHeader_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEImageLayout*)&dummy)->__base.m_pCorHeader) - (nuint)(&dummy));
+		nuint m_pCorHeader = *(nuint*)(m_pLayouts_Loaded + m_pCorHeader_Offset);
+		// PEImageLayout.m_pCorHeader
+
+		{
+			var pointer2 = new Pointer(new[] {
+				m_file_Offset,
+				m_openedILimage_Offset,
+				m_pLayouts_Loaded_Offset,
+				0u
+			});
+			var pointer3 = new Pointer(new[] {
+				m_file_Offset,
+				m_openedILimage_Offset,
+				m_pLayouts_Loaded_Offset - (uint)sizeof(nuint),
+				0u
+			});
+			Console.WriteLine($"{(uint)ReadUIntPtr(pointer2, assembly.ModuleHandle):X8} {(uint)ReadUIntPtr(pointer3, assembly.ModuleHandle):X8}");
+			Console.WriteLine($"{(uint)ReadUIntPtr(pointer2, ReflectionHelpers.GetModuleHandle(typeof(MetadataInfo).Module)):X8} {(uint)ReadUIntPtr(pointer3, ReflectionHelpers.GetModuleHandle(typeof(MetadataInfo).Module)):X8}");
+			// TODO: Fx20下从文件加载程序集，或者任意clr版本加载一个混合模式程序集，clr会加载两遍，第一遍是MappedImageLayout用来作为IMDInternalImport的元数据源，第二遍是LoadedImageLayout用于Marshal.GetHINSTANCE，Module.GetIL等，非常奇怪的特性
+			// Workaround: 先获取一个MappedImageLayout，然后判断是否有值。如果有，用MappedImageLayout的值来进行后续处理，如获取m_pCorHeader
+			// TODO: 提供一个api，枚举所有ImageLayout，然后返回对应的ImageBase，ImageSize，m_pCorHeader，在Dump时可以尝试所有的值，增加成功的概率
+		}
+
+		var pointer = new Pointer(new[] {
+			m_file_Offset,
+			m_openedILimage_Offset,
+			m_pLayouts_Loaded_Offset,
+			m_pCorHeader_Offset
+		});
+		Check(Verify(pointer, null, p => Memory.TryReadUInt32(p, out uint cb) && cb == 0x48));
+		return pointer;
 	}
 
-	static bool CheckCor20HeaderAddressPointer(nuint pCorHeader) {
-		if (!TryReadUInt32(pCorHeader, out uint cb))
-			return false;
-		return cb == 0x48;
-	}
+	static Pointer ScanMetadataAddressPointer(bool uncompressed, out nuint vfptr) {
+		int dummy = 0;
+		var assembly = TestAssemblyManager.GetAssembly(uncompressed ? TestAssemblyFlags.Uncompressed : 0);
+		nuint module = assembly.ModuleHandle;
+		// must be a loaded layout (load from file not memory)
+		Check((RuntimeDefinitions.Module*)module);
 
-	static List<Pointer> ScanMetadataAddressPointerTemplates() {
-		var m_fileOffsets = sizeof(nuint) == 4 ? new uint[] { 0x4, 0x8 } : new uint[] { 0x8, 0x10 };
+		uint m_file_Offset;
+		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453)
+			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_453*)&dummy)->m_file) - (nuint)(&dummy));
+		else
+			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_20*)&dummy)->m_file) - (nuint)(&dummy));
+		nuint m_file = *(nuint*)(module + m_file_Offset);
+		Check((RuntimeDefinitions.PEFile*)m_file);
 		// Module.m_file
-		var unknownOffset1s = Enumerable.Range(0, (0x3C - 0x10) / 4).Select(t => 0x10 + ((uint)t * 4)).ToArray();
-		// PEFile.????
-		var unknownOffset2s = sizeof(nuint) == 4
-			? Enumerable.Range(0, (0x39C - 0x350) / 4).Select(t => 0x350 + ((uint)t * 4)).ToArray()
-			: Enumerable.Range(0, (0x5FC - 0x5B0) / 4).Select(t => 0x5B0 + ((uint)t * 4)).ToArray();
-		// ????.????
-		var offsetMatrix = new uint[][] {
-			m_fileOffsets,
-			unknownOffset1s,
-			unknownOffset2s
-		};
-		return ScanPointerTemplates(TestModuleHandles[0], offsetMatrix, pMetadata => CheckMetadataAddressPointer(pMetadata));
+
+		var metadataImport = MetadataImport.Create(assembly.Module);
+		vfptr = metadataImport.Vfptr;
+		nuint m_pMDImport = metadataImport.This;
+		uint m_pMDImport_Offset;
+		bool found = false;
+		for (m_pMDImport_Offset = 0; m_pMDImport_Offset < 8 * (uint)sizeof(nuint); m_pMDImport_Offset += 4) {
+			if (*(nuint*)(m_file + m_pMDImport_Offset) != m_pMDImport)
+				continue;
+			found = true;
+			break;
+		}
+		Check(found);
+		// PEFile.m_pMDImport
+
+		var m_pCorHeader = (RuntimeDefinitions.IMAGE_COR20_HEADER*)ReadUIntPtr(Cor20HeaderAddressPointer, assembly.ModuleHandle);
+		nuint m_pvMd = ReflectionHelpers.GetNativeModuleHandle(assembly.Module) + m_pCorHeader->MetaData.VirtualAddress;
+		uint m_pStgdb_Offset = 0;
+		uint m_pvMd_Offset = 0;
+		if (uncompressed) {
+			uint m_cbMd = 0x1c;
+			// *pcb = sizeof(STORAGESIGNATURE) + pStorage->GetVersionStringLength();
+			// TODO: we should calculate actual metadata size
+			if (RuntimeEnvironment.Version >= RuntimeVersion.Fx45)
+				m_pStgdb_Offset = (uint)((nuint)(&((RuntimeDefinitions.MDInternalRW_45*)&dummy)->m_pStgdb) - (nuint)(&dummy));
+			else
+				m_pStgdb_Offset = (uint)((nuint)(&((RuntimeDefinitions.MDInternalRW_20*)&dummy)->m_pStgdb) - (nuint)(&dummy));
+			nuint m_pStgdb = *(nuint*)(m_pMDImport + m_pStgdb_Offset);
+			uint start = sizeof(nuint) == 4 ? 0x1000u : 0x19A0;
+			uint end = sizeof(nuint) == 4 ? 0x1200u : 0x1BA0;
+			for (uint offset = start; offset <= end; offset += 4) {
+				if (*(nuint*)(m_pStgdb + offset) != m_pvMd)
+					continue;
+				if (*(uint*)(m_pStgdb + offset + (uint)sizeof(nuint)) != m_cbMd)
+					continue;
+				m_pvMd_Offset = offset;
+				break;
+			}
+		}
+		else {
+			uint m_cbMd = m_pCorHeader->MetaData.Size;
+			uint start = sizeof(nuint) == 4 ? 0x350u : 0x5B0;
+			uint end = sizeof(nuint) == 4 ? 0x39Cu : 0x5FC;
+			for (uint offset = start; offset <= end; offset += 4) {
+				if (*(nuint*)(m_pMDImport + offset) != m_pvMd)
+					continue;
+				if (*(uint*)(m_pMDImport + offset + (uint)sizeof(nuint)) != m_cbMd)
+					continue;
+				m_pvMd_Offset = offset;
+				break;
+			}
+		}
+		Check(m_pvMd_Offset != 0);
+
+		//nuint code = metadataImport.GetFunction(MetadataImportFunction.GetVersionString);
+		//var constants = new List<ushort>();
+		//while (*(byte*)code is not 0xC2 and not 0xC3) {
+		//	var ldasm = new Ldasm();
+		//	uint size = ldasm.ldasm(code, sizeof(nuint) == 8);
+		//	if (ldasm.TryGetDisplacement(code, out uint displacement) && displacement < ushort.MaxValue)
+		//		constants.Add((ushort)displacement);
+		//	if (ldasm.TryGetImmediate(code, out ulong immediate) && immediate < ushort.MaxValue)
+		//		constants.Add((ushort)immediate);
+		//	if ((ldasm.flags & Ldasm.F_RELATIVE) != 0)
+		//		break;
+		//	// collect constants until first jmp
+		//	code += size;
+		//}
+		// alternative method
+
+		var pointer = new Pointer(new[] {
+			m_file_Offset,
+			m_pMDImport_Offset
+		});
+		if (m_pStgdb_Offset != 0)
+			pointer.Add(m_pStgdb_Offset);
+		pointer.Add(m_pvMd_Offset);
+		Check(Verify(pointer, uncompressed, p => Memory.TryReadUInt32(p, out uint signature) && signature == 0x424A5342));
+		return pointer;
 	}
 
-	static bool CheckMetadataAddressPointer(nuint pMetadata) {
-		if (!TryReadUInt32(pMetadata, out uint signature))
-			return false;
-		return signature == 0x424A5342;
-	}
-
-	static List<Pointer> ScanPointerTemplates(nuint baseAddress, uint[][] offsetMatrix, Predicate<nuint> checker) {
-		int level = 0;
-		// 表示第几级偏移
-		int[] offsetIndices = new int[offsetMatrix.Length];
-		// 表示每一级偏移对应在offsetMatrix中的索引
-		nuint[] values = new nuint[offsetMatrix.Length];
-		// 表示每一级地址的值
-		var pointers = new List<Pointer>();
-		while (true) {
-			bool result = TryReadIntPtr((level > 0 ? values[level - 1] : baseAddress) + offsetMatrix[level][offsetIndices[level]], out values[level]);
-			// 读取当前偏移对应的值
-			if (level == offsetMatrix.Length - 1) {
-				// 是最后一级偏移
-				if (result && checker(values[level]))
-					pointers.Add(new Pointer(0, Enumerable.Range(0, offsetMatrix.Length).Select(t => offsetMatrix[t][offsetIndices[t]]).ToArray()));
-				// 如果读取成功，说明是最后一级偏移，检测是否为有效指针，添加到列表
-				offsetIndices[level]++;
-				// 尝试当前级偏移数组的下一个偏移
-			}
-			else {
-				// 不是最后一级偏移
-				if (result)
-					level++;
-				else
-					offsetIndices[level]++;
-			}
-			while (true) {
-				// 回溯
-				if (offsetIndices[level] == offsetMatrix[level].Length) {
-					// 如果当前级偏移尝试完成了
-					if (level > 0) {
-						// 回溯到上一级，清空当前级数据
-						offsetIndices[level] = 0;
-						level -= 1;
-						offsetIndices[level]++;
-					}
-					else {
-						return pointers;
-					}
-					// 已经回溯到了level=0，说明扫描完成
-				}
-				else {
-					break;
-				}
-			}
+	static void Check(RuntimeDefinitions.Module* module) {
+		Check(Memory.TryReadUIntPtr((nuint)module, out _));
+		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453) {
+			nuint m_pSimpleName = ((RuntimeDefinitions.Module_453*)module)->m_pSimpleName;
+			bool b = Memory.TryReadUtf8String(m_pSimpleName, out var moduleName) && moduleName.All(t => char.IsLetterOrDigit(t) || t == '_' || t == '-');
+			Check(b);
 		}
 	}
 
-	static nuint GetModuleHandle(Module module) {
-		switch (Environment.Version.Major) {
-		case 2:
-			return (nuint)(nint)ModuleHandleField.GetValue(module.ModuleHandle);
-		case 4:
-			return (nuint)(nint)ModuleHandleField.GetValue(module);
-		default:
-			throw new NotSupportedException();
+	static void Check(RuntimeDefinitions.PEFile* file) {
+		Check(Memory.TryReadUIntPtr((nuint)file, out _));
+	}
+
+	static void Check(RuntimeDefinitions.PEImage* image) {
+		Check(Memory.TryReadUIntPtr((nuint)image, out _));
+		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx40) {
+			var m_Path = ((RuntimeDefinitions.PEImage_40*)image)->m_path;
+			bool b = Memory.TryReadUnicodeString(m_Path.m_buffer, out var path) && File.Exists(path);
+			Check(b);
+		}
+		else {
+			var m_Path = ((RuntimeDefinitions.PEImage_20*)image)->m_path;
+			bool b = Memory.TryReadUnicodeString(m_Path.m_buffer, out var path) && File.Exists(path);
+			Check(b);
 		}
 	}
 
-	static bool TryToAddress(Pointer pointer, out nuint address) {
-		return NativeProcess.TryToAddress(pointer, out address);
+	static void Check(RuntimeDefinitions.PEImageLayout* layout) {
+		Check(Memory.TryReadUIntPtr((nuint)layout, out _));
+		Check((ushort)layout->__base.m_base == 0);
+		Check(layout->__base.m_pCorHeader - layout->__base.m_base == 0x2008);
 	}
 
-	static bool TryReadUInt32(nuint address, out uint value) {
-		return NativeProcess.TryReadUInt32(address, out value);
+	static void Check(RuntimeDefinitions.IMAGE_COR20_HEADER* corHeader) {
+		Check(Memory.TryReadUIntPtr((nuint)corHeader, out _));
+		Check(corHeader->cb == 0x48);
+		Check(corHeader->MajorRuntimeVersion == 2);
+		Check(corHeader->MinorRuntimeVersion == 2);
 	}
 
-	static bool TryReadIntPtr(nuint address, out nuint value) {
-		return NativeProcess.TryReadIntPtr(address, out value);
+	static void Check(bool condition) {
+		if (!condition) {
+			Debug2.Assert(false, "Contains error in RuntimeDefinitions");
+			throw new InvalidOperationException("Contains error in RuntimeDefinitions");
+		}
+	}
+
+	static bool Verify(Pointer pointer, bool? testUncompressed, Predicate<nuint> checker) {
+		for (int i = 0; i < 5; i++) {
+			for (TestAssemblyFlags inMemory = 0; inMemory <= TestAssemblyFlags.InMemory; inMemory += (int)TestAssemblyFlags.InMemory) {
+				var uncompressed = testUncompressed == true ? TestAssemblyFlags.Uncompressed : 0;
+				var uncompressedEnd = testUncompressed == false ? 0 : TestAssemblyFlags.Uncompressed;
+				for (; uncompressed <= uncompressedEnd; uncompressed += (int)TestAssemblyFlags.Uncompressed) {
+					var assembly = TestAssemblyManager.GetAssembly((TestAssemblyFlags)i | inMemory | uncompressed);
+					nuint value = ReadUIntPtr(pointer, assembly.ModuleHandle);
+					if (value == 0 || !checker(value))
+						return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	static uint ReadUInt32(Pointer pointer, nuint baseAddress) {
+		pointer = MakePointer(pointer, baseAddress);
+		if (!Memory.TryToAddress(pointer, out nuint address))
+			return default;
+		if (!Memory.TryReadUInt32(address, out uint value))
+			return default;
+		return value;
+	}
+
+	static nuint ReadUIntPtr(Pointer pointer, nuint baseAddress) {
+		pointer = MakePointer(pointer, baseAddress);
+		if (!Memory.TryToAddress(pointer, out nuint address))
+			return default;
+		if (!Memory.TryReadUIntPtr(address, out nuint value))
+			return default;
+		return value;
+	}
+
+	static Pointer MakePointer(Pointer template, nuint baseAddress) {
+		Debug2.Assert(!template.IsEmpty);
+		return new Pointer(template) { BaseAddress = baseAddress };
 	}
 }

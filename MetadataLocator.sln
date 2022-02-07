@@ -1,19 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29021.104
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator", "MetadataLocator\MetadataLocator.csproj", "{AED69D77-8C7B-41BA-9967-AC9B522430F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetadataLocator", "MetadataLocator\MetadataLocator.csproj", "{AED69D77-8C7B-41BA-9967-AC9B522430F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test", "MetadataLocator.Test\MetadataLocator.Test.csproj", "{BDFD2EFD-B6B7-4783-97A1-B8D1493E171C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetadataLocator.Test", "MetadataLocator.Test\MetadataLocator.Test.csproj", "{BDFD2EFD-B6B7-4783-97A1-B8D1493E171C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR20.x86", "MetadataLocator.Test.CLR20.x86\MetadataLocator.Test.CLR20.x86.csproj", "{7368F4FE-ED71-433B-A525-F20EA7FA488D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetadataLocator.Test.CLR20.x86", "MetadataLocator.Test.CLR20.x86\MetadataLocator.Test.CLR20.x86.csproj", "{7368F4FE-ED71-433B-A525-F20EA7FA488D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR20.x64", "MetadataLocator.Test.CLR20.x64\MetadataLocator.Test.CLR20.x64.csproj", "{B925862F-E6BB-4F18-B560-B19153AB97D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetadataLocator.Test.CLR20.x64", "MetadataLocator.Test.CLR20.x64\MetadataLocator.Test.CLR20.x64.csproj", "{B925862F-E6BB-4F18-B560-B19153AB97D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR40.x86", "MetadataLocator.Test.CLR40.x86\MetadataLocator.Test.CLR40.x86.csproj", "{7BA7644F-B706-415E-AE0E-CC5FC6247021}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetadataLocator.Test.CLR40.x86", "MetadataLocator.Test.CLR40.x86\MetadataLocator.Test.CLR40.x86.csproj", "{7BA7644F-B706-415E-AE0E-CC5FC6247021}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetadataLocator.Test.CLR40.x64", "MetadataLocator.Test.CLR40.x64\MetadataLocator.Test.CLR40.x64.csproj", "{195944D9-ABA2-44CE-9F7D-AE432D114BD1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetadataLocator.Test.CLR40.x64", "MetadataLocator.Test.CLR40.x64\MetadataLocator.Test.CLR40.x64.csproj", "{195944D9-ABA2-44CE-9F7D-AE432D114BD1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

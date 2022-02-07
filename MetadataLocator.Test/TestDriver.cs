@@ -1,18 +1,25 @@
 using System;
+using System.Diagnostics;
 
 namespace MetadataLocator.Test;
 
-public static unsafe class Tester {
+public static unsafe class TestDriver {
 	public static void Test() {
-		var metadataInfo = MetadataInfo.GetMetadataInfo(typeof(MetadataInfo).Module);
+		RuntimeDefinitionTests.VerifySize();
+		MetadataImportTests.Test();
+		var testModule = typeof(MetadataInfo).Module;
+		var t = DotNetPEInfo.Create(testModule);
+		Debug2.Assert(!t.IsInvalid);
+		return;
+		var metadataInfo = MetadataInfo.Create(testModule);
 		var dotNetPEInfo = metadataInfo.PEInfo;
 		PrintStreamInfo("#~ or #-", metadataInfo.TableStream);
 		PrintStreamInfo("#Strings", metadataInfo.StringHeap);
 		PrintStreamInfo("#US", metadataInfo.UserStringHeap);
 		PrintStreamInfo("#GUID", metadataInfo.GuidHeap);
 		PrintStreamInfo("#Blob", metadataInfo.BlobHeap);
-		Console.WriteLine($"DotNetPEInfo.IsValid: {dotNetPEInfo.IsValid}");
-		if (dotNetPEInfo.IsValid) {
+		Console.WriteLine($"DotNetPEInfo.IsInvalid: {dotNetPEInfo.IsInvalid}");
+		if (!dotNetPEInfo.IsInvalid) {
 			Console.WriteLine($"DotNetPEInfo.ImageLayout: {dotNetPEInfo.ImageLayout}");
 			Console.WriteLine($"DotNetPEInfo.Cor20HeaderAddress: {dotNetPEInfo.Cor20HeaderAddress.ToHexString()}");
 			Console.WriteLine($"DotNetPEInfo.MetadataAddress: {dotNetPEInfo.MetadataAddress.ToHexString()}");

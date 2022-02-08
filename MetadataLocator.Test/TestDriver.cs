@@ -10,8 +10,8 @@ public static unsafe class TestDriver {
 		var testModule = typeof(MetadataInfo).Module;
 		var t = DotNetPEInfo.Create(testModule);
 		Debug2.Assert(!t.IsInvalid);
-		return;
 		var metadataInfo = MetadataInfo.Create(testModule);
+		return;
 		var dotNetPEInfo = metadataInfo.PEInfo;
 		PrintStreamInfo("#~ or #-", metadataInfo.TableStream);
 		PrintStreamInfo("#Strings", metadataInfo.StringHeap);

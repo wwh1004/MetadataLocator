@@ -26,8 +26,6 @@ static unsafe class MetadataInfoImpl {
 		metadataSizePointer_RW = new Pointer(metadataAddressPointer_RW);
 		metadataSizePointer_RW.Offsets[metadataSizePointer_RW.Offsets.Count - 1] += (uint)sizeof(nuint);
 		isInitialized = true;
-		// TODO: Fx20下从文件加载程序集，或者任意clr版本加载一个混合模式程序集，clr会加载两遍，第一遍是MappedImageLayout用来作为IMDInternalImport的元数据源，第二遍是LoadedImageLayout用于Marshal.GetHINSTANCE，Module.GetIL等，非常奇怪的特性
-		// Workaround: 先获取一个MappedImageLayout，然后判断是否有值。如果有，用MappedImageLayout的值来进行后续处理，如获取m_pCorHeader
 	}
 
 	static Pointer ScanMetadataAddressPointer(bool uncompressed, out nuint vfptr) {
@@ -65,8 +63,10 @@ static unsafe class MetadataInfoImpl {
 		Utils.Check(found);
 		// PEFile.m_pMDImport
 
-		var m_pCorHeader = (RuntimeDefinitions.IMAGE_COR20_HEADER*)Utils.ReadUIntPtr(/*Cor20HeaderAddressPointer*/ null, assembly.ModuleHandle);
-		nuint m_pvMd = ReflectionHelpers.GetNativeModuleHandle(assembly.Module) + m_pCorHeader->MetaData.VirtualAddress;
+		var peInfo = DotNetPEInfo.Create(assembly.Module);
+		var imageLayout = peInfo.MappedLayout.IsInvalid ? peInfo.LoadedLayout : peInfo.MappedLayout;
+		var m_pCorHeader = (RuntimeDefinitions.IMAGE_COR20_HEADER*)imageLayout.CorHeaderAddress;
+		nuint m_pvMd = imageLayout.ImageBase + m_pCorHeader->MetaData.VirtualAddress;
 		uint m_pStgdb_Offset = 0;
 		uint m_pvMd_Offset = 0;
 		if (uncompressed) {
@@ -109,22 +109,6 @@ static unsafe class MetadataInfoImpl {
 		}
 		Utils.Check(m_pvMd_Offset != 0);
 
-		//nuint code = metadataImport.GetFunction(MetadataImportFunction.GetVersionString);
-		//var constants = new List<ushort>();
-		//while (*(byte*)code is not 0xC2 and not 0xC3) {
-		//	var ldasm = new Ldasm();
-		//	uint size = ldasm.ldasm(code, sizeof(nuint) == 8);
-		//	if (ldasm.TryGetDisplacement(code, out uint displacement) && displacement < ushort.MaxValue)
-		//		constants.Add((ushort)displacement);
-		//	if (ldasm.TryGetImmediate(code, out ulong immediate) && immediate < ushort.MaxValue)
-		//		constants.Add((ushort)immediate);
-		//	if ((ldasm.flags & Ldasm.F_RELATIVE) != 0)
-		//		break;
-		//	// collect constants until first jmp
-		//	code += size;
-		//}
-		// alternative method
-
 		var pointer = new Pointer(new[] {
 			m_file_Offset,
 			m_pMDImport_Offset
@@ -140,6 +124,7 @@ static unsafe class MetadataInfoImpl {
 		if (module is null)
 			throw new ArgumentNullException(nameof(module));
 
+		Initialize();
 		_ = RuntimeEnvironment.Version;
 		nuint moduleHandle = ReflectionHelpers.GetModuleHandle(module);
 		nuint vfptr = MetadataImport.Create(module).Vfptr;

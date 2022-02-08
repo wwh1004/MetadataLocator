@@ -51,9 +51,9 @@ public static unsafe class RuntimeDefinitions {
 
 	#region PE
 	//public const int IMAGE_FLAT = 0;
-	//public const int IMAGE_MAPPED = 1;  // comment: not existing in newer clr
+	//public const int IMAGE_MAPPED = 1;  // comment: not existing in .NET ? TODO: update comment when .NET 7.0 released https://github.com/dotnet/runtime/commit/35e4e97867db6bb2cc1c9f1e91c80dd80759e259#diff-42902be0f805f8e1cce666fd0dfb892ffbac53d3c5897beaa86d965df22ef1dbL287
 	//public const int IMAGE_LOADED = 2;
-	//public const int IMAGE_LOADED_FOR_INTROSPECTION = 3;  // comment: not existing in newer clr
+	//public const int IMAGE_LOADED_FOR_INTROSPECTION = 3;  // comment: not existing in .NET Core v3.0+ https://github.com/dotnet/coreclr/commit/af4ec7c89d0192ad14392da04e8c097da8ec9e48#diff-dd1e605d2e73125b21c2617d94bb41def043971508334410a1d62675cf768b6dL332
 	//public const int IMAGE_COUNT = 4;
 
 	// --------------------------------------------------------------------------------

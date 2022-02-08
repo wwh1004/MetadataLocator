@@ -1,36 +1,20 @@
-using System;
 using System.Reflection;
 
 namespace MetadataLocator;
-
-/// <summary>
-/// Image layout kind
-/// </summary>
-public enum PEImageLayoutKind {
-	/// <summary>
-	/// Use this if the PE file has a normal structure (eg. it's been read from a file on disk)
-	/// </summary>
-	Flat,
-
-	/// <summary>
-	/// Use this if the PE file has been loaded into memory by the OS PE file loader
-	/// </summary>
-	Mapped,
-
-	/// <summary>
-	/// Use this if the PE file has been loaded into memory by the OS PE file loader
-	/// </summary>
-	Loaded
-}
 
 /// <summary>
 /// CLR internal image layout
 /// </summary>
 public sealed class PEImageLayout {
 	/// <summary>
-	/// Layout kind
+	/// Empty instance
 	/// </summary>
-	public PEImageLayoutKind Kind;
+	public static readonly PEImageLayout Empty = new();
+
+	/// <summary>
+	/// Determine if current instance is invalid
+	/// </summary>
+	public bool IsInvalid => this == Empty;
 
 	/// <summary>
 	/// Image base address
@@ -63,24 +47,29 @@ public sealed class DotNetPEInfo {
 	public bool IsInvalid => this == Empty;
 
 	/// <summary>
-	/// ImageLayout
-	/// </summary>
-	public PEImageLayout[] ImageLayouts = Array2.Empty<PEImageLayout>();
-
-	/// <summary>
 	/// Image file path
 	/// </summary>
 	public string FilePath = string.Empty;
 
 	/// <summary>
-	/// If image is loaded from file
-	/// </summary>
-	public bool IsFile => !IsMemory;
-
-	/// <summary>
 	/// If image is loaded in memory
 	/// </summary>
-	public bool IsMemory => string.IsNullOrEmpty(FilePath);
+	public bool InMemory => string.IsNullOrEmpty(FilePath);
+
+	/// <summary>
+	/// Flat image layout, maybe empty (Assembly.Load(byte[]))
+	/// </summary>
+	public PEImageLayout FlatLayout = PEImageLayout.Empty;
+
+	/// <summary>
+	/// Mapped image layout, maybe empty (Assembly.LoadFile)
+	/// </summary>
+	public PEImageLayout MappedLayout = PEImageLayout.Empty;
+
+	/// <summary>
+	/// Loaded image layout, not empty (Assembly.LoadFile)
+	/// </summary>
+	public PEImageLayout LoadedLayout = PEImageLayout.Empty;
 
 	/// <summary>
 	/// Get the .NET PE info of a module

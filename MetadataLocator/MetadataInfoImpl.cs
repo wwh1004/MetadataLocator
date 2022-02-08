@@ -5,35 +5,42 @@ using System.Reflection;
 namespace MetadataLocator;
 
 static unsafe class MetadataInfoImpl {
-	static Pointer MetadataAddressPointer_RO = Pointer.Empty;
-	static Pointer MetadataSizePointer_RO = Pointer.Empty;
-	static nuint MDInternalRO_Vfptr;
-	static Pointer MetadataAddressPointer_RW = Pointer.Empty;
-	static Pointer MetadataSizePointer_RW = Pointer.Empty;
-	static nuint MDInternalRW_Vfptr;
+	static Pointer metadataAddressPointer_RO = Pointer.Empty;
+	static Pointer metadataSizePointer_RO = Pointer.Empty;
+	static nuint metadataInterfaceVfptr_RO;
+	static Pointer metadataAddressPointer_RW = Pointer.Empty;
+	static Pointer metadataSizePointer_RW = Pointer.Empty;
+	static nuint metadataInterfaceVfptr_RW;
 	static bool isInitialized;
 
 	static void Initialize() {
 		if (isInitialized)
 			return;
 
-		MetadataAddressPointer_RO = ScanMetadataAddressPointer(false, out MDInternalRO_Vfptr);
-		Debug2.Assert(!MetadataAddressPointer_RO.IsEmpty);
-		MetadataSizePointer_RO = new Pointer(MetadataAddressPointer_RO);
-		MetadataSizePointer_RO.Offsets[MetadataSizePointer_RO.Offsets.Count - 1] += (uint)sizeof(nuint);
-		MetadataAddressPointer_RW = ScanMetadataAddressPointer(true, out MDInternalRW_Vfptr);
-		Debug2.Assert(!MetadataAddressPointer_RW.IsEmpty);
-		MetadataSizePointer_RW = new Pointer(MetadataAddressPointer_RW);
-		MetadataSizePointer_RW.Offsets[MetadataSizePointer_RW.Offsets.Count - 1] += (uint)sizeof(nuint);
+		metadataAddressPointer_RO = ScanMetadataAddressPointer(false, out metadataInterfaceVfptr_RO);
+		Debug2.Assert(!metadataAddressPointer_RO.IsEmpty);
+		metadataSizePointer_RO = new Pointer(metadataAddressPointer_RO);
+		metadataSizePointer_RO.Offsets[metadataSizePointer_RO.Offsets.Count - 1] += (uint)sizeof(nuint);
+		metadataAddressPointer_RW = ScanMetadataAddressPointer(true, out metadataInterfaceVfptr_RW);
+		Debug2.Assert(!metadataAddressPointer_RW.IsEmpty);
+		metadataSizePointer_RW = new Pointer(metadataAddressPointer_RW);
+		metadataSizePointer_RW.Offsets[metadataSizePointer_RW.Offsets.Count - 1] += (uint)sizeof(nuint);
 		isInitialized = true;
+		// TODO: Fx20下从文件加载程序集，或者任意clr版本加载一个混合模式程序集，clr会加载两遍，第一遍是MappedImageLayout用来作为IMDInternalImport的元数据源，第二遍是LoadedImageLayout用于Marshal.GetHINSTANCE，Module.GetIL等，非常奇怪的特性
+		// Workaround: 先获取一个MappedImageLayout，然后判断是否有值。如果有，用MappedImageLayout的值来进行后续处理，如获取m_pCorHeader
 	}
 
 	static Pointer ScanMetadataAddressPointer(bool uncompressed, out nuint vfptr) {
+		const bool InMemory = false;
+
 		int dummy = 0;
-		var assembly = TestAssemblyManager.GetAssembly(uncompressed ? TestAssemblyFlags.Uncompressed : 0);
+		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
+		if (uncompressed)
+			assemblyFlags |= TestAssemblyFlags.Uncompressed;
+		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		// must be a loaded layout (load from file not memory)
-		Utils.Check((RuntimeDefinitions.Module*)module);
+		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		// Get native Module object
 
 		uint m_file_Offset;
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453)
@@ -136,13 +143,13 @@ static unsafe class MetadataInfoImpl {
 		_ = RuntimeEnvironment.Version;
 		nuint moduleHandle = ReflectionHelpers.GetModuleHandle(module);
 		nuint vfptr = MetadataImport.Create(module).Vfptr;
-		if (vfptr == MDInternalRO_Vfptr) {
-			Utils.ReadUIntPtr(MetadataAddressPointer_RO, moduleHandle);
-			Utils.ReadUInt32(MetadataSizePointer_RO, moduleHandle);
+		if (vfptr == metadataInterfaceVfptr_RO) {
+			Utils.ReadUIntPtr(metadataAddressPointer_RO, moduleHandle);
+			Utils.ReadUInt32(metadataSizePointer_RO, moduleHandle);
 		}
-		else if (vfptr == MDInternalRW_Vfptr) {
-			Utils.ReadUIntPtr(MetadataAddressPointer_RW, moduleHandle);
-			Utils.ReadUInt32(MetadataSizePointer_RW, moduleHandle);
+		else if (vfptr == metadataInterfaceVfptr_RW) {
+			Utils.ReadUIntPtr(metadataAddressPointer_RW, moduleHandle);
+			Utils.ReadUInt32(metadataSizePointer_RW, moduleHandle);
 		}
 		else {
 			Debug2.Assert(false);

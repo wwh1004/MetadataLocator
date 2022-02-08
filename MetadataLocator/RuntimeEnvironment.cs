@@ -81,6 +81,7 @@ static class RuntimeEnvironment {
 			// Improve .NET Core version APIs: https://github.com/dotnet/runtime/issues/28701
 			// Environment.Version works fine since .NET Core v3.0
 			int minor = Environment.Version.Minor;
+			Debug2.Assert(major <= 6, "Update RuntimeDefinitions if need");
 			if (major >= 6)
 				return RuntimeVersion.Net60;
 			if (major >= 5)

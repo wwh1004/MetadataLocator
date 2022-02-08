@@ -1,16 +1,15 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace MetadataLocator;
 
 static unsafe class Utils {
-	public static void Check(RuntimeDefinitions.Module* module) {
+	public static void Check(RuntimeDefinitions.Module* module, string moduleName) {
 		Check(Memory.TryReadUIntPtr((nuint)module, out _));
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453) {
 			nuint m_pSimpleName = ((RuntimeDefinitions.Module_453*)module)->m_pSimpleName;
-			bool b = Memory.TryReadUtf8String(m_pSimpleName, out var moduleName) && moduleName.All(t => char.IsLetterOrDigit(t) || t == '_' || t == '-');
+			bool b = Memory.TryReadUtf8String(m_pSimpleName, out var simpleName) && simpleName == moduleName;
 			Check(b);
 		}
 	}
@@ -19,24 +18,24 @@ static unsafe class Utils {
 		Check(Memory.TryReadUIntPtr((nuint)file, out _));
 	}
 
-	public static void Check(RuntimeDefinitions.PEImage* image) {
+	public static void Check(RuntimeDefinitions.PEImage* image, bool inMemory) {
 		Check(Memory.TryReadUIntPtr((nuint)image, out _));
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx40) {
 			var m_Path = ((RuntimeDefinitions.PEImage_40*)image)->m_path;
-			bool b = Memory.TryReadUnicodeString(m_Path.m_buffer, out var path) && File.Exists(path);
+			bool b = Memory.TryReadUnicodeString(m_Path.m_buffer, out var path) && (inMemory ? path.Length == 0 : File.Exists(path));
 			Check(b);
 		}
 		else {
 			var m_Path = ((RuntimeDefinitions.PEImage_20*)image)->m_path;
-			bool b = Memory.TryReadUnicodeString(m_Path.m_buffer, out var path) && File.Exists(path);
+			bool b = Memory.TryReadUnicodeString(m_Path.m_buffer, out var path) && (inMemory ? path.Length == 0 : File.Exists(path));
 			Check(b);
 		}
 	}
 
-	public static void Check(RuntimeDefinitions.PEImageLayout* layout) {
+	public static void Check(RuntimeDefinitions.PEImageLayout* layout, bool inMemory) {
 		Check(Memory.TryReadUIntPtr((nuint)layout, out _));
 		Check((ushort)layout->__base.m_base == 0);
-		Check(layout->__base.m_pCorHeader - layout->__base.m_base == 0x2008);
+		Check(layout->__base.m_pCorHeader - layout->__base.m_base == (inMemory ? 0x208u : 0x2008));
 	}
 
 	public static void Check(RuntimeDefinitions.IMAGE_COR20_HEADER* corHeader) {
@@ -70,24 +69,36 @@ static unsafe class Utils {
 	}
 
 	public static uint ReadUInt32(Pointer template, nuint baseAddress) {
-		template = MakePointer(template, baseAddress);
-		if (!Memory.TryToAddress(template, out nuint address))
-			return default;
+		nuint address = ReadPointer(template, baseAddress);
 		if (!Memory.TryReadUInt32(address, out uint value))
 			return default;
 		return value;
 	}
 
 	public static nuint ReadUIntPtr(Pointer template, nuint baseAddress) {
-		template = MakePointer(template, baseAddress);
-		if (!Memory.TryToAddress(template, out nuint address))
-			return default;
+		nuint address = ReadPointer(template, baseAddress);
 		if (!Memory.TryReadUIntPtr(address, out nuint value))
 			return default;
 		return value;
 	}
 
-	public static Pointer MakePointer(Pointer template, nuint baseAddress) {
+	public static string ReadUnicodeString(Pointer template, nuint baseAddress) {
+		nuint address = ReadPointer(template, baseAddress);
+		if (!Memory.TryReadUnicodeString(address, out var value))
+			return string.Empty;
+		return value;
+	}
+
+	static nuint ReadPointer(Pointer template, nuint baseAddress) {
+		if (template.IsEmpty)
+			return default;
+		var pointer = MakePointer(template, baseAddress);
+		if (!Memory.TryToAddress(pointer, out nuint address))
+			return default;
+		return address;
+	}
+
+	static Pointer MakePointer(Pointer template, nuint baseAddress) {
 		Debug2.Assert(!template.IsEmpty);
 		return new Pointer(template) { BaseAddress = baseAddress };
 	}

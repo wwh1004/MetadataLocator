@@ -19,12 +19,12 @@ public static unsafe class TestDriver {
 		PrintStreamInfo("#GUID", metadataInfo.GuidHeap);
 		PrintStreamInfo("#Blob", metadataInfo.BlobHeap);
 		Console.WriteLine($"DotNetPEInfo.IsInvalid: {dotNetPEInfo.IsInvalid}");
-		if (!dotNetPEInfo.IsInvalid) {
-			Console.WriteLine($"DotNetPEInfo.ImageLayout: {dotNetPEInfo.ImageLayout}");
-			Console.WriteLine($"DotNetPEInfo.Cor20HeaderAddress: {dotNetPEInfo.Cor20HeaderAddress.ToHexString()}");
-			Console.WriteLine($"DotNetPEInfo.MetadataAddress: {dotNetPEInfo.MetadataAddress.ToHexString()}");
-			Console.WriteLine($"DotNetPEInfo.MetadataSize: {dotNetPEInfo.MetadataSize}");
-		}
+		//if (!dotNetPEInfo.IsInvalid) {
+		//	Console.WriteLine($"DotNetPEInfo.ImageLayout: {dotNetPEInfo.ImageLayout}");
+		//	Console.WriteLine($"DotNetPEInfo.Cor20HeaderAddress: {dotNetPEInfo.Cor20HeaderAddress.ToHexString()}");
+		//	Console.WriteLine($"DotNetPEInfo.MetadataAddress: {dotNetPEInfo.MetadataAddress.ToHexString()}");
+		//	Console.WriteLine($"DotNetPEInfo.MetadataSize: {dotNetPEInfo.MetadataSize}");
+		//}
 		Console.ReadKey(true);
 	}
 

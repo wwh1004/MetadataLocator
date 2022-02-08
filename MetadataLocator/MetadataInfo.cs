@@ -72,6 +72,16 @@ public sealed class MetadataInfo {
 	public MetadataImport MetadataImport = MetadataImport.Empty;
 
 	/// <summary>
+	/// Address of metadata
+	/// </summary>
+	public nuint MetadataAddress;
+
+	/// <summary>
+	/// Size of metadata
+	/// </summary>
+	public uint MetadataSize;
+
+	/// <summary>
 	/// #~ or #- info
 	/// </summary>
 	public MetadataTableInfo TableStream = MetadataTableInfo.Empty;

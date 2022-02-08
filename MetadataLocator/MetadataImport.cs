@@ -35,6 +35,9 @@ public sealed unsafe class MetadataImport {
 	};
 	static Profile? cachedProfile;
 
+	// IMDInternalImport interface contains breaking change in this commit: https://github.com/dotnet/coreclr/commit/ef7767a3ba1c0a34b55cbd5496b799b17218ca14#diff-1a774ef53fa72817aedde61a45204358e0cd0a76272780558180dc27a2f85cb5L309
+	// so we must call QueryInterface to judge which version IMDInternalImport we are using
+
 	/// <summary>
 	/// Empty instance
 	/// </summary>

@@ -380,9 +380,6 @@ public static unsafe class RuntimeDefinitions {
 		public PEFile* m_file;
 	}
 	#endregion
-
-	// IMDInternalImport interface contains breaking change in this commit: https://github.com/dotnet/runtime/commit/4339d84cffffabd8f0c5e23a3d9d3dca53eaa94e#diff-2d29d091fd47e8c20739fd4cf5b370276b54a215636cd52044379783dce22107L309
-	// so we must call QueryInterface to judge which version IMDInternalImport we are using
 }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning restore CS0649

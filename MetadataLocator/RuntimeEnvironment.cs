@@ -30,12 +30,14 @@ enum RuntimeVersion {
 	Fx453,
 	Core10,
 	Core30,
-	Net50
+	Core31,
+	Net50,
+	Net60,
 }
 
 static class RuntimeEnvironment {
-	static readonly Version v45 = new(4, 0, 30319, 17000);
-	static readonly Version v453 = new(4, 5, 0, 0); // .NET 4.6 Preview
+	static readonly Version fx45 = new(4, 0, 30319, 17000);
+	static readonly Version fx453 = new(4, 5, 0, 0); // .NET 4.6 Preview
 
 	public static RuntimeFlavor Flavor { get; } = GetRuntimeFlavor();
 
@@ -59,9 +61,9 @@ static class RuntimeEnvironment {
 				if (!GetModuleFileName(moduleHandle, path, MAX_PATH))
 					break;
 				var version = GetFileVersion(path.ToString());
-				if (version >= v453)
+				if (version >= fx453)
 					return RuntimeVersion.Fx453;
-				if (version >= v45)
+				if (version >= fx45)
 					return RuntimeVersion.Fx45;
 				return RuntimeVersion.Fx40;
 			}
@@ -72,14 +74,24 @@ static class RuntimeEnvironment {
 		}
 		case RuntimeFlavor.Core:
 		case RuntimeFlavor.Net: {
-			int major = Environment.Version.Major;
+			var version = Environment.Version;
+			int major = version.Major;
 			if (major == 4)
 				return RuntimeVersion.Core10;
 			// Improve .NET Core version APIs: https://github.com/dotnet/runtime/issues/28701
 			// Environment.Version works fine since .NET Core v3.0
+			int minor = Environment.Version.Minor;
+			if (major >= 6)
+				return RuntimeVersion.Net60;
 			if (major >= 5)
 				return RuntimeVersion.Net50;
-			return RuntimeVersion.Core30;
+			if (major >= 3) {
+				if (minor >= 1)
+					return RuntimeVersion.Core31;
+				return RuntimeVersion.Core30;
+			}
+			Debug2.Assert(false);
+			break;
 		}
 		}
 		throw new NotSupportedException();

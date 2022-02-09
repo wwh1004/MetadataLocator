@@ -5,12 +5,12 @@ using System.Reflection;
 namespace MetadataLocator;
 
 static unsafe class MetadataInfoImpl {
+	static nuint metadataInterfaceVfptr_RO;
 	static Pointer metadataAddressPointer_RO = Pointer.Empty;
 	static Pointer metadataSizePointer_RO = Pointer.Empty;
-	static nuint metadataInterfaceVfptr_RO;
+	static nuint metadataInterfaceVfptr_RW;
 	static Pointer metadataAddressPointer_RW = Pointer.Empty;
 	static Pointer metadataSizePointer_RW = Pointer.Empty;
-	static nuint metadataInterfaceVfptr_RW;
 	static bool isInitialized;
 
 	static void Initialize() {
@@ -21,10 +21,15 @@ static unsafe class MetadataInfoImpl {
 		Debug2.Assert(!metadataAddressPointer_RO.IsEmpty);
 		metadataSizePointer_RO = new Pointer(metadataAddressPointer_RO);
 		metadataSizePointer_RO.Offsets[metadataSizePointer_RO.Offsets.Count - 1] += (uint)sizeof(nuint);
+		ScanHeapInfoPointers(metadataAddressPointer_RO, false);
+
 		metadataAddressPointer_RW = ScanMetadataAddressPointer(true, out metadataInterfaceVfptr_RW);
 		Debug2.Assert(!metadataAddressPointer_RW.IsEmpty);
 		metadataSizePointer_RW = new Pointer(metadataAddressPointer_RW);
 		metadataSizePointer_RW.Offsets[metadataSizePointer_RW.Offsets.Count - 1] += (uint)sizeof(nuint);
+
+
+
 		isInitialized = true;
 	}
 
@@ -63,10 +68,11 @@ static unsafe class MetadataInfoImpl {
 		Utils.Check(found);
 		// PEFile.m_pMDImport
 
-		var peInfo = DotNetPEInfo.Create(assembly.Module);
+		var peInfo = PEInfo.Create(assembly.Module);
 		var imageLayout = peInfo.MappedLayout.IsInvalid ? peInfo.LoadedLayout : peInfo.MappedLayout;
 		var m_pCorHeader = (RuntimeDefinitions.IMAGE_COR20_HEADER*)imageLayout.CorHeaderAddress;
 		nuint m_pvMd = imageLayout.ImageBase + m_pCorHeader->MetaData.VirtualAddress;
+		Utils.Check((RuntimeDefinitions.STORAGESIGNATURE*)m_pvMd);
 		uint m_pStgdb_Offset = 0;
 		uint m_pvMd_Offset = 0;
 		if (uncompressed) {
@@ -116,8 +122,53 @@ static unsafe class MetadataInfoImpl {
 		if (m_pStgdb_Offset != 0)
 			pointer.Add(m_pStgdb_Offset);
 		pointer.Add(m_pvMd_Offset);
+		{
+			var a = (RuntimeDefinitions.MDInternalRO_20*)m_pMDImport;
+			var b = (RuntimeDefinitions.MDInternalRO_45*)m_pMDImport;
+		}
 		Utils.Check(Utils.Verify(pointer, uncompressed, p => Memory.TryReadUInt32(p, out uint signature) && signature == 0x424A5342));
 		return pointer;
+	}
+
+	static Pointer[] ScanHeapInfoPointers(Pointer metadataAddressPointer, bool uncompressed) {
+		const bool InMemory = false;
+
+		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
+		if (uncompressed)
+			assemblyFlags |= TestAssemblyFlags.Uncompressed;
+		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
+		nuint module = assembly.ModuleHandle;
+		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		// Get native Module object
+
+		nuint pMetadata = Utils.ReadUIntPtr(metadataAddressPointer, module);
+		var info = new MiniMetadataInfo(pMetadata);
+		if (uncompressed) {
+			return null;
+		}
+		else {
+			var guidHeapPointer = new Pointer(metadataAddressPointer);
+			guidHeapPointer.Offsets[guidHeapPointer.Offsets.Count - 1] -= (uint)sizeof(RuntimeDefinitions.StgPoolReadOnly);
+			Utils.Check(Utils.ReadUIntPtr(guidHeapPointer, module) == info.GuidHeapAddress);
+			// m_GuidHeap
+
+			var userStringHeapPointer = new Pointer(guidHeapPointer);
+			userStringHeapPointer.Offsets[userStringHeapPointer.Offsets.Count - 1] -= (uint)sizeof(RuntimeDefinitions.StgPoolReadOnly);
+			Utils.Check(Utils.ReadUIntPtr(userStringHeapPointer, module) == info.UserStringHeapAddress);
+			// m_UserStringHeap
+
+			var blobHeapPointer = new Pointer(userStringHeapPointer);
+			blobHeapPointer.Offsets[blobHeapPointer.Offsets.Count - 1] -= (uint)sizeof(RuntimeDefinitions.StgPoolReadOnly);
+			Utils.Check(Utils.ReadUIntPtr(blobHeapPointer, module) == info.BlobHeapAddress);
+			// m_BlobHeap
+
+			var stringHeapPointer = new Pointer(blobHeapPointer);
+			stringHeapPointer.Offsets[stringHeapPointer.Offsets.Count - 1] -= (uint)sizeof(RuntimeDefinitions.StgPoolReadOnly);
+			Utils.Check(Utils.ReadUIntPtr(stringHeapPointer, module) == info.StringHeapAddress);
+			// m_StringHeap
+
+			return new[] { stringHeapPointer, userStringHeapPointer, guidHeapPointer, blobHeapPointer };
+		}
 	}
 
 	public static MetadataInfo GetMetadataInfo(Module module) {
@@ -125,29 +176,28 @@ static unsafe class MetadataInfoImpl {
 			throw new ArgumentNullException(nameof(module));
 
 		Initialize();
-		_ = RuntimeEnvironment.Version;
 		nuint moduleHandle = ReflectionHelpers.GetModuleHandle(module);
 		nuint vfptr = MetadataImport.Create(module).Vfptr;
 		if (vfptr == metadataInterfaceVfptr_RO) {
-			Utils.ReadUIntPtr(metadataAddressPointer_RO, moduleHandle);
-			Utils.ReadUInt32(metadataSizePointer_RO, moduleHandle);
+			var metadataInfo = new MetadataInfo();
+			metadataInfo.MetadataAddress = Utils.ReadUIntPtr(metadataAddressPointer_RO, moduleHandle);
+			metadataInfo.MetadataSize = Utils.ReadUInt32(metadataSizePointer_RO, moduleHandle);
+			metadataInfo.TableStream = GetTableStream(metadataInfo);
+			metadataInfo.StringHeap = GetStringHeap(metadataInfo);
+			metadataInfo.UserStringHeap = GetUserStringHeap(metadataInfo);
+			metadataInfo.GuidHeap = GetGuidHeap(metadataInfo);
+			metadataInfo.BlobHeap = GetBlobHeap(metadataInfo);
 		}
 		else if (vfptr == metadataInterfaceVfptr_RW) {
 			Utils.ReadUIntPtr(metadataAddressPointer_RW, moduleHandle);
 			Utils.ReadUInt32(metadataSizePointer_RW, moduleHandle);
+			
 		}
 		else {
 			Debug2.Assert(false);
+			return MetadataInfo.Empty;
 		}
-		throw new NotImplementedException();
-		var metadataInfo = new MetadataInfo();
-		metadataInfo.TableStream = GetTableStream(metadataInfo);
-		metadataInfo.StringHeap = GetStringHeap(metadataInfo);
-		metadataInfo.UserStringHeap = GetUserStringHeap(metadataInfo);
-		metadataInfo.GuidHeap = GetGuidHeap(metadataInfo);
-		metadataInfo.BlobHeap = GetBlobHeap(metadataInfo);
-		metadataInfo.PEInfo = DotNetPEInfoImpl.GetDotNetPEInfo(module);
-		return metadataInfo;
+		return MetadataInfo.Empty;
 	}
 
 	static MetadataTableInfo GetTableStream(MetadataInfo metadataInfo) {
@@ -181,5 +231,66 @@ static unsafe class MetadataInfoImpl {
 			return 2;
 		else
 			return 4;
+	}
+
+	static bool IsZeros(nuint pStgPoolReadOnly) {
+		var stgPool = (RuntimeDefinitions.StgPoolReadOnly*)pStgPoolReadOnly;
+		return stgPool->__base.m_cbSegSize == 0;
+		// TODO: check m_pSegData is pointer to m_zeros
+	}
+
+	sealed class MiniMetadataInfo {
+		public nuint TableStreamAddress;
+		public uint TableStreamSize;
+		public nuint StringHeapAddress;
+		public uint StringHeapSize;
+		public nuint UserStringHeapAddress;
+		public uint UserStringHeapSize;
+		public nuint GuidHeapAddress;
+		public uint GuidHeapSize;
+		public nuint BlobHeapAddress;
+		public uint BlobHeapSize;
+
+		public MiniMetadataInfo(nuint pMetadata) {
+			var pStorageSignature = (RuntimeDefinitions.STORAGESIGNATURE*)pMetadata;
+			Utils.Check(pStorageSignature);
+			var pStorageHeader = (RuntimeDefinitions.STORAGEHEADER*)((nuint)pStorageSignature + 0x10 + pStorageSignature->iVersionString);
+			nuint p = (nuint)pStorageHeader + (uint)sizeof(RuntimeDefinitions.STORAGEHEADER);
+			Utils.Check(pStorageHeader->iStreams == 5);
+			// must have 5 streams so we can get all stream info offsets
+			for (int i = 0; i < pStorageHeader->iStreams; i++) {
+				uint offset = *(uint*)p;
+				p += 4;
+				uint size = *(uint*)p;
+				p += 4;
+				Utils.Check(Memory.TryReadAnsiString(p, out var name));
+				p += ((uint)name.Length + 1 + 3) & ~3u;
+				switch (name) {
+				case "#~":
+					TableStreamAddress = pMetadata + offset;
+					TableStreamSize = size;
+					break;
+				case "#Strings":
+					StringHeapAddress = pMetadata + offset;
+					StringHeapSize = size;
+					break;
+				case "#US":
+					UserStringHeapAddress = pMetadata + offset;
+					UserStringHeapSize = size;
+					break;
+				case "#GUID":
+					GuidHeapAddress = pMetadata + offset;
+					GuidHeapSize = size;
+					break;
+				case "#Blob":
+					BlobHeapAddress = pMetadata + offset;
+					BlobHeapSize = size;
+					break;
+				default:
+					Debug2.Assert(false);
+					throw new NotSupportedException();
+				}
+			}
+		}
 	}
 }

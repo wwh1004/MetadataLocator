@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace MetadataLocator;
@@ -45,7 +46,14 @@ static unsafe class Utils {
 		Check(corHeader->MinorRuntimeVersion == 2);
 	}
 
-	public static void Check(bool condition) {
+	public static void Check(RuntimeDefinitions.STORAGESIGNATURE* storageSignature) {
+		Check(Memory.TryReadUIntPtr((nuint)storageSignature, out _));
+		Check(storageSignature->lSignature == RuntimeDefinitions.STORAGE_MAGIC_SIG);
+		Check(storageSignature->iMajorVer == 1);
+		Check(storageSignature->iMinorVer == 1);
+	}
+
+	public static void Check([DoesNotReturnIf(false)] bool condition) {
 		if (!condition) {
 			Debug2.Assert(false, "Contains error in RuntimeDefinitions");
 			throw new InvalidOperationException("Contains error in RuntimeDefinitions");

@@ -7,6 +7,11 @@ namespace MetadataLocator;
 /// </summary>
 public abstract class MetadataStreamInfo {
 	/// <summary>
+	/// Determine if current instance is empty
+	/// </summary>
+	public bool IsEmpty => Address == 0 || Length == 0;
+
+	/// <summary>
 	/// Address of stream
 	/// </summary>
 	public nuint Address;
@@ -27,11 +32,6 @@ public sealed class MetadataTableInfo : MetadataStreamInfo {
 	public static readonly MetadataTableInfo Empty = new();
 
 	/// <summary>
-	/// Determine if current instance is invalid
-	/// </summary>
-	public bool IsInvalid => this == Empty;
-
-	/// <summary>
 	/// Is compressed table stream (#~)
 	/// </summary>
 	public bool IsCompressed;
@@ -45,11 +45,6 @@ public sealed class MetadataHeapInfo : MetadataStreamInfo {
 	/// Empty instance
 	/// </summary>
 	public static readonly MetadataHeapInfo Empty = new();
-
-	/// <summary>
-	/// Determine if current instance is invalid
-	/// </summary>
-	public bool IsInvalid => this == Empty;
 }
 
 /// <summary>
@@ -79,6 +74,7 @@ public sealed class MetadataInfo {
 	/// <summary>
 	/// Size of metadata
 	/// </summary>
+	/// <remarks>Currently return 0 if table stream is uncompressed (aka #-)</remarks>
 	public uint MetadataSize;
 
 	/// <summary>
@@ -105,11 +101,6 @@ public sealed class MetadataInfo {
 	/// #Blob heap info
 	/// </summary>
 	public MetadataHeapInfo BlobHeap = MetadataHeapInfo.Empty;
-
-	/// <summary>
-	/// .NET PE Info
-	/// </summary>
-	public DotNetPEInfo PEInfo = DotNetPEInfo.Empty;
 
 	/// <summary>
 	/// Get the metadata info of a module

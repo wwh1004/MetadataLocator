@@ -4,6 +4,8 @@ namespace MetadataLocator;
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 public static unsafe class RuntimeDefinitions {
 	#region Basic
+	public const uint STORAGE_MAGIC_SIG = 0x424A5342; // BSJB
+
 	public struct IMAGE_DATA_DIRECTORY {
 		public uint VirtualAddress;
 		public uint Size;
@@ -23,6 +25,21 @@ public static unsafe class RuntimeDefinitions {
 		public IMAGE_DATA_DIRECTORY ExportAddressTableJumps;
 		public IMAGE_DATA_DIRECTORY ManagedNativeHeader;
 	};
+
+	public unsafe struct STORAGESIGNATURE {
+		public uint lSignature;        // "Magic" signature.
+		public ushort iMajorVer;       // Major file version.
+		public ushort iMinorVer;       // Minor file version.
+		public uint iExtraData;        // Offset to next structure of information 
+		public uint iVersionString;    // Length of version string
+		public fixed byte pVersion[1]; // Version string
+	}
+
+	public struct STORAGEHEADER {
+		public byte fFlags;
+		public byte pad;
+		public ushort iStreams;
+	}
 
 	// ==========================================================================================
 	// SString is the base class for safe strings.
@@ -279,14 +296,80 @@ public static unsafe class RuntimeDefinitions {
 		public uint m_ulExtra;                // Extra data, only persisted if non-zero.  (m_heaps&EXTRA_DATA flags)
 	}
 
-	/* incomplete */
+	/* complete, 0x03 / 0x03 bytes */
+	public struct CMiniColDef {
+		public byte m_Type;     // Type of the column.
+		public byte m_oColumn;  // Offset of the column.
+		public byte m_cbColumn; // Size of the column.
+	};
+
+	/* complete, 0x08 / 0x10 bytes */
+	public struct CMiniTableDef {
+		public CMiniColDef* m_pColDefs; // Array of field defs.
+		public byte m_cCols;     // Count of columns in the table.
+		public byte m_iKey;      // Column which is the key, if any.
+		public ushort m_cbRec;   // Size of the records.
+	};
+
+	/* complete, 0x0168 / 0x02d0 bytes */
+	public struct CMiniTableDefs {
+		public CMiniTableDef Module;
+		public CMiniTableDef TypeRef;
+		public CMiniTableDef TypeDef;
+		public CMiniTableDef FieldPtr;
+		public CMiniTableDef Field;
+		public CMiniTableDef MethodPtr;
+		public CMiniTableDef Method;
+		public CMiniTableDef ParamPtr;
+		public CMiniTableDef Param;
+		public CMiniTableDef InterfaceImpl;
+		public CMiniTableDef MemberRef;
+		public CMiniTableDef Constant;
+		public CMiniTableDef CustomAttribute;
+		public CMiniTableDef FieldMarshal;
+		public CMiniTableDef DeclSecurity;
+		public CMiniTableDef ClassLayout;
+		public CMiniTableDef FieldLayout;
+		public CMiniTableDef StandAloneSig;
+		public CMiniTableDef EventMap;
+		public CMiniTableDef EventPtr;
+		public CMiniTableDef Event;
+		public CMiniTableDef PropertyMap;
+		public CMiniTableDef PropertyPtr;
+		public CMiniTableDef Property;
+		public CMiniTableDef MethodSemantics;
+		public CMiniTableDef MethodImpl;
+		public CMiniTableDef ModuleRef;
+		public CMiniTableDef TypeSpec;
+		public CMiniTableDef ImplMap;
+		public CMiniTableDef FieldRVA;
+		public CMiniTableDef ENCLog;
+		public CMiniTableDef ENCMap;
+		public CMiniTableDef Assembly;
+		public CMiniTableDef AssemblyProcessor;
+		public CMiniTableDef AssemblyOS;
+		public CMiniTableDef AssemblyRef;
+		public CMiniTableDef AssemblyRefProcessor;
+		public CMiniTableDef AssemblyRefOS;
+		public CMiniTableDef File;
+		public CMiniTableDef ExportedType;
+		public CMiniTableDef ManifestResource;
+		public CMiniTableDef NestedClass;
+		public CMiniTableDef GenericParam;
+		public CMiniTableDef MethodSpec;
+		public CMiniTableDef GenericParamConstraint;
+	}
+
+	/* complete, 0x0258 / 0x03c0 bytes */
 	public struct CMiniMdBase {
 		public nuint __vfptr;
 		public CMiniMdSchema m_Schema;         // data header.
 		public uint m_TblCount;                // Tables in this database.
 		public int m_fVerifiedByTrustedSource; // whether the data was verified by a trusted source
-
-		// ... some paddings ...
+		public CMiniTableDefs m_TableDefs;
+		public uint m_iStringsMask;
+		public uint m_iGuidsMask;
+		public uint m_iBlobsMask;
 	}
 
 	/* incomplete */

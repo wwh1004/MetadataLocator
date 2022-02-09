@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace MetadataLocator;
 
-static unsafe class DotNetPEInfoImpl {
+static unsafe class PEInfoImpl {
 	static Pointer filePathPointer = Pointer.Empty;
 	static Pointer flatImageLayoutPointer = Pointer.Empty;
 	static Pointer mappedImageLayoutPointer = Pointer.Empty;
@@ -157,13 +157,13 @@ static unsafe class DotNetPEInfoImpl {
 		return pointer;
 	}
 
-	public static DotNetPEInfo GetDotNetPEInfo(Module module) {
+	public static PEInfo GetPEInfo(Module module) {
 		if (module is null)
 			throw new ArgumentNullException(nameof(module));
 
 		Initialize();
 		nuint moduleHandle = ReflectionHelpers.GetModuleHandle(module);
-		var peInfo = new DotNetPEInfo {
+		var peInfo = new PEInfo {
 			FilePath = Utils.ReadUnicodeString(filePathPointer, moduleHandle),
 			FlatLayout = GetImageLayout(Utils.ReadUIntPtr(flatImageLayoutPointer, moduleHandle)),
 			MappedLayout = GetImageLayout(Utils.ReadUIntPtr(mappedImageLayoutPointer, moduleHandle)),

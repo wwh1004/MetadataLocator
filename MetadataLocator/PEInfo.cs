@@ -35,11 +35,11 @@ public sealed class PEImageLayout {
 /// <summary>
 /// .NET PE Info
 /// </summary>
-public sealed class DotNetPEInfo {
+public sealed class PEInfo {
 	/// <summary>
 	/// Empty instance
 	/// </summary>
-	public static readonly DotNetPEInfo Empty = new();
+	public static readonly PEInfo Empty = new();
 
 	/// <summary>
 	/// Determine if current instance is invalid
@@ -76,7 +76,7 @@ public sealed class DotNetPEInfo {
 	/// </summary>
 	/// <param name="module"></param>
 	/// <returns></returns>
-	public static DotNetPEInfo Create(Module module) {
-		return DotNetPEInfoImpl.GetDotNetPEInfo(module);
+	public static PEInfo Create(Module module) {
+		return PEInfoImpl.GetPEInfo(module);
 	}
 }

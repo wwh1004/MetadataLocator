@@ -6,10 +6,10 @@ namespace MetadataLocator.Test;
 
 static unsafe class RuntimeDefinitionTests {
 	readonly struct ArchSize {
-		public readonly byte X86;
-		public readonly byte X64;
+		public readonly ushort X86;
+		public readonly ushort X64;
 
-		public ArchSize(byte x86, byte x64) {
+		public ArchSize(ushort x86, ushort x64) {
 			X86 = x86;
 			X64 = x64;
 		}
@@ -26,6 +26,10 @@ static unsafe class RuntimeDefinitionTests {
 		[typeof(GuidHeapRO)] = new(0x18, 0x28),
 		[typeof(CMiniMdSchemaBase)] = new(0x18, 0x18),
 		[typeof(CMiniMdSchema)] = new(0xd0, 0xd0),
+		[typeof(CMiniColDef)] = new(0x03, 0x03),
+		[typeof(CMiniTableDef)] = new(0x08, 0x10),
+		[typeof(CMiniTableDefs)] = new(0x0168, 0x02d0),
+		[typeof(CMiniMdBase)] = new(0x0258, 0x03c0),
 	};
 
 	public static void VerifySize() {

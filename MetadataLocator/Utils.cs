@@ -43,7 +43,7 @@ static unsafe class Utils {
 		Check(Memory.TryReadUIntPtr((nuint)corHeader, out _));
 		Check(corHeader->cb == 0x48);
 		Check(corHeader->MajorRuntimeVersion == 2);
-		Check(corHeader->MinorRuntimeVersion == 2);
+		Check(corHeader->MinorRuntimeVersion == 5);
 	}
 
 	public static void Check(RuntimeDefinitions.STORAGESIGNATURE* storageSignature) {

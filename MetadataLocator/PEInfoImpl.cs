@@ -117,6 +117,7 @@ static unsafe class PEInfoImpl {
 		isMappedLayoutExisting = false;
 		uint m_pLayouts_Loaded_Offset = m_pMDImport_Offset - 4 - (uint)sizeof(nuint);
 		uint m_pLayouts_Offset_Min = m_pLayouts_Loaded_Offset - (4 * (uint)sizeof(nuint));
+		nuint actualModuleBase = ReflectionHelpers.GetNativeModuleHandle(assembly.Module);
 		found = false;
 		for (; m_pLayouts_Loaded_Offset >= m_pLayouts_Offset_Min; m_pLayouts_Loaded_Offset -= 4) {
 			var m_pLayout = *(RuntimeDefinitions.PEImageLayout**)(m_openedILimage + m_pLayouts_Loaded_Offset);
@@ -124,7 +125,6 @@ static unsafe class PEInfoImpl {
 				continue;
 			if (!Memory.TryReadUIntPtr(m_pLayout->__vfptr, out _))
 				continue;
-			nuint actualModuleBase = ReflectionHelpers.GetNativeModuleHandle(assembly.Module);
 			if (actualModuleBase != m_pLayout->__base.m_base)
 				continue;
 			Debug2.Assert(InMemory);
@@ -143,6 +143,8 @@ static unsafe class PEInfoImpl {
 		// PEImage.m_pLayouts[IMAGE_LOADED]
 
 		uint m_pCorHeader_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEImageLayout*)&dummy)->__base.m_pCorHeader) - (nuint)(&dummy));
+		nuint m_pCorHeader = *(nuint*)(m_pLayouts_Loaded + m_pCorHeader_Offset);
+		Utils.Check((RuntimeDefinitions.IMAGE_COR20_HEADER*)m_pCorHeader);
 		// PEImageLayout.m_pCorHeader
 
 		var pointer = new Pointer(new[] {
@@ -150,10 +152,14 @@ static unsafe class PEInfoImpl {
 			m_openedILimage_Offset,
 			m_pLayouts_Loaded_Offset
 		});
-		var pointerForCorHeader = new Pointer(pointer);
-		pointerForCorHeader.Add(m_pCorHeader_Offset);
 		Utils.Check(Utils.Verify(pointer, null, p => Memory.TryReadUIntPtr(p + (uint)sizeof(nuint), out nuint @base) && (ushort)@base == 0));
-		Utils.Check(Utils.Verify(pointerForCorHeader, null, p => Memory.TryReadUInt32(p, out uint cb) && cb == 0x48));
+		Utils.Check(Utils.Verify(MakePointer(pointer, m_pCorHeader_Offset), null, p => Memory.TryReadUInt32(p, out uint cb) && cb == 0x48));
+		return pointer;
+	}
+
+	static Pointer MakePointer(Pointer basePointer, uint offset) {
+		var pointer = new Pointer(basePointer);
+		pointer.Add(offset);
 		return pointer;
 	}
 

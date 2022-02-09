@@ -443,10 +443,10 @@ public static unsafe class RuntimeDefinitions {
 	public struct CMiniMd_20 {
 		public CMiniMdBase_20 __base;
 		public TableROs m_Tables;
+		public GuidHeapRO m_GuidHeap;
 		public StringHeapRO m_StringHeap;
 		public BlobHeapRO m_BlobHeap;
 		public BlobHeapRO m_UserStringHeap;
-		public GuidHeapRO m_GuidHeap;
 	}
 
 	/* complete, 0x0370 / 0x05c8 bytes */

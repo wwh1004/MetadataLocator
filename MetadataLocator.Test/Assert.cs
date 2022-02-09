@@ -16,6 +16,7 @@ static class Assert {
 		if (!condition)
 			throw new AssertFailedException();
 	}
+
 	public static void IsTrue([DoesNotReturnIf(false)] bool condition, string message) {
 		if (!condition)
 			throw new AssertFailedException(message);

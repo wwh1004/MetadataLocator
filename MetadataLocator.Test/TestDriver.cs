@@ -5,6 +5,7 @@ namespace MetadataLocator.Test;
 public static unsafe class TestDriver {
 	public static void Test() {
 		RuntimeDefinitionTests.VerifySize();
+		RuntimeDefinitionTests.VerifyOffset();
 		MetadataImportTests.Test();
 		var testModule = typeof(MetadataInfo).Module;
 		var peInfo = PEInfo.Create(testModule);

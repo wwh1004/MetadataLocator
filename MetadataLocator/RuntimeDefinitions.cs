@@ -205,24 +205,7 @@ public static unsafe class RuntimeDefinitions {
 	//}
 	#endregion
 
-	#region Metadata Heap
-	/* complete, 0x18 / 0x28 bytes */
-	public struct StringHeapRO {
-		public StgPoolReadOnly m_StringPool;
-	}
-
-	/* complete, 0x18 / 0x28 bytes */
-	public struct BlobHeapRO {
-		public StgBlobPoolReadOnly m_BlobPool;
-	}
-
-	/* complete, 0x18 / 0x28 bytes */
-	public struct GuidHeapRO {
-		public StgPoolReadOnly m_GuidPool;
-	}
-	#endregion
-
-	#region Metadata Model
+	#region Metadata Table
 	public const int TBL_Module = 0;
 	public const int TBL_TypeRef = 1;
 	public const int TBL_TypeDef = 2;
@@ -272,6 +255,79 @@ public static unsafe class RuntimeDefinitions {
 	public const int TBL_COUNT_V1 = 42; // Highest table in v1.0 database
 	public const int TBL_COUNT_V2 = 45; // Highest in v2.0 database
 
+	/* complete, 0x04 / 0x08 bytes */
+	public struct TableRO {
+		public nuint m_pData;
+	}
+
+	/* complete, 0x00b4 / 0x0168 bytes */
+	public struct TableROs {
+		public TableRO Module;
+		public TableRO TypeRef;
+		public TableRO TypeDef;
+		public TableRO FieldPtr;
+		public TableRO Field;
+		public TableRO MethodPtr;
+		public TableRO Method;
+		public TableRO ParamPtr;
+		public TableRO Param;
+		public TableRO InterfaceImpl;
+		public TableRO MemberRef;
+		public TableRO Constant;
+		public TableRO CustomAttribute;
+		public TableRO FieldMarshal;
+		public TableRO DeclSecurity;
+		public TableRO ClassLayout;
+		public TableRO FieldLayout;
+		public TableRO StandAloneSig;
+		public TableRO EventMap;
+		public TableRO EventPtr;
+		public TableRO Event;
+		public TableRO PropertyMap;
+		public TableRO PropertyPtr;
+		public TableRO Property;
+		public TableRO MethodSemantics;
+		public TableRO MethodImpl;
+		public TableRO ModuleRef;
+		public TableRO TypeSpec;
+		public TableRO ImplMap;
+		public TableRO FieldRVA;
+		public TableRO ENCLog;
+		public TableRO ENCMap;
+		public TableRO Assembly;
+		public TableRO AssemblyProcessor;
+		public TableRO AssemblyOS;
+		public TableRO AssemblyRef;
+		public TableRO AssemblyRefProcessor;
+		public TableRO AssemblyRefOS;
+		public TableRO File;
+		public TableRO ExportedType;
+		public TableRO ManifestResource;
+		public TableRO NestedClass;
+		public TableRO GenericParam;
+		public TableRO MethodSpec;
+		public TableRO GenericParamConstraint;
+	}
+	#endregion
+
+	#region Metadata Heap
+	/* complete, 0x18 / 0x28 bytes */
+	public struct StringHeapRO {
+		public StgPoolReadOnly m_StringPool;
+	}
+
+	/* complete, 0x18 / 0x28 bytes */
+	public struct BlobHeapRO {
+		public StgBlobPoolReadOnly m_BlobPool;
+	}
+
+	/* complete, 0x18 / 0x28 bytes */
+	public struct GuidHeapRO {
+		public StgPoolReadOnly m_GuidPool;
+	}
+	#endregion
+
+	#region Metadata Model
 	//*****************************************************************************
 	// The mini, hard-coded schema.  For each table, we persist the count of
 	//  records.  We also persist the size of string, blob, guid, and rid
@@ -360,8 +416,19 @@ public static unsafe class RuntimeDefinitions {
 		public CMiniTableDef GenericParamConstraint;
 	}
 
+	/* complete, 0x0250 / 0x03c0 bytes */
+	public struct CMiniMdBase_20 {
+		public nuint __vfptr;
+		public CMiniMdSchema m_Schema;         // data header.
+		public uint m_TblCount;                // Tables in this database.
+		public CMiniTableDefs m_TableDefs;
+		public uint m_iStringsMask;
+		public uint m_iGuidsMask;
+		public uint m_iBlobsMask;
+	}
+
 	/* complete, 0x0258 / 0x03c0 bytes */
-	public struct CMiniMdBase {
+	public struct CMiniMdBase_40 {
 		public nuint __vfptr;
 		public CMiniMdSchema m_Schema;         // data header.
 		public uint m_TblCount;                // Tables in this database.
@@ -372,30 +439,46 @@ public static unsafe class RuntimeDefinitions {
 		public uint m_iBlobsMask;
 	}
 
-	/* incomplete */
-	public struct CMiniMd {
-		public CMiniMdBase __base;
-		// class MetaData::TableRO m_Tables[45];
-		//public StringHeapRO m_StringHeap;
-		//public BlobHeapRO m_BlobHeap;
-		//public BlobHeapRO m_UserStringHeap;
-		//public GuidHeapRO m_GuidHeap;
+	/* complete, 0x0368 / 0x05c8 bytes */
+	public struct CMiniMd_20 {
+		public CMiniMdBase_20 __base;
+		public TableROs m_Tables;
+		public StringHeapRO m_StringHeap;
+		public BlobHeapRO m_BlobHeap;
+		public BlobHeapRO m_UserStringHeap;
+		public GuidHeapRO m_GuidHeap;
+	}
+
+	/* complete, 0x0370 / 0x05c8 bytes */
+	public struct CMiniMd_40 {
+		public CMiniMdBase_40 __base;
+		public TableROs m_Tables;
+		public StringHeapRO m_StringHeap;
+		public BlobHeapRO m_BlobHeap;
+		public BlobHeapRO m_UserStringHeap;
+		public GuidHeapRO m_GuidHeap;
 	}
 
 	public struct CMiniMdRW {
-		public CMiniMdBase __base;
+		//public CMiniMdBase __base;
 
 		// ... some paddings ...
 	}
 	#endregion
 
 	#region LiteWeightStgdb
-	public struct CLiteWeightStgdb_CMiniMd {
-		public CMiniMd m_MiniMd;
+	/* complete, 0x0370 / 0x05d8 bytes */
+	public struct CLiteWeightStgdb_CMiniMd_20 {
+		public CMiniMd_20 m_MiniMd;
+		public nuint m_pvMd;
+		public uint m_cbMd;
+	}
 
-		// ... some paddings ...
-		//public nuint m_pvMd;
-		//public uint m_cbMd;
+	/* complete, 0x0378 / 0x05d8 bytes */
+	public struct CLiteWeightStgdb_CMiniMd_40 {
+		public CMiniMd_40 m_MiniMd;
+		public nuint m_pvMd;
+		public uint m_cbMd;
 	}
 
 	public struct CLiteWeightStgdb_CMiniMdRW {
@@ -417,15 +500,23 @@ public static unsafe class RuntimeDefinitions {
 	public struct MDInternalRO {
 	}
 
+	/* complete, 0x0378 / 0x05e0 bytes */
 	public struct MDInternalRO_20 {
 		public nuint __vfptr_IMDInternalImport;
-		public CLiteWeightStgdb_CMiniMd m_LiteWeightStgdb;
+		public CLiteWeightStgdb_CMiniMd_20 m_LiteWeightStgdb;
 	}
 
+	/* complete, 0x0380 / 0x05e0 bytes */
+	public struct MDInternalRO_40 {
+		public nuint __vfptr_IMDInternalImport;
+		public CLiteWeightStgdb_CMiniMd_40 m_LiteWeightStgdb;
+	}
+
+	/* complete, 0x0380 / 0x05e0 bytes */
 	public struct MDInternalRO_45 {
 		public nuint __vfptr_IMDInternalImport;
 		public nuint __vfptr_IMDCommon;
-		public CLiteWeightStgdb_CMiniMd m_LiteWeightStgdb;
+		public CLiteWeightStgdb_CMiniMd_40 m_LiteWeightStgdb;
 	}
 
 	public struct MDInternalRW {

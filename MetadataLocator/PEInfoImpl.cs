@@ -153,13 +153,7 @@ static unsafe class PEInfoImpl {
 			m_pLayouts_Loaded_Offset
 		});
 		Utils.Check(Utils.Verify(pointer, null, p => Memory.TryReadUIntPtr(p + (uint)sizeof(nuint), out nuint @base) && (ushort)@base == 0));
-		Utils.Check(Utils.Verify(MakePointer(pointer, m_pCorHeader_Offset), null, p => Memory.TryReadUInt32(p, out uint cb) && cb == 0x48));
-		return pointer;
-	}
-
-	static Pointer MakePointer(Pointer basePointer, uint offset) {
-		var pointer = new Pointer(basePointer);
-		pointer.Add(offset);
+		Utils.Check(Utils.Verify(Utils.WithOffset(pointer, m_pCorHeader_Offset), null, p => Memory.TryReadUInt32(p, out uint cb) && cb == 0x48));
 		return pointer;
 	}
 

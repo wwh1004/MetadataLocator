@@ -1,6 +1,49 @@
+using System;
 using System.Reflection;
 
 namespace MetadataLocator;
+
+/// <summary>
+/// Metadata schema
+/// </summary>
+public sealed class MetadataSchema {
+	/// <summary>
+	/// Empty instance
+	/// </summary>
+	public static readonly MetadataSchema Empty = new();
+
+	/// <summary>
+	/// Determine if current instance is empty
+	/// </summary>
+	public bool IsEmpty => this == Empty;
+
+	/// <summary/>
+	public uint Reserved1;
+
+	/// <summary/>
+	public byte MajorVersion;
+
+	/// <summary/>
+	public byte MinorVersion;
+
+	/// <summary/>
+	public byte Flags;
+
+	/// <summary/>
+	public byte Log2Rid;
+
+	/// <summary/>
+	public ulong ValidMask;
+
+	/// <summary/>
+	public ulong SortedMask;
+
+	/// <summary/>
+	public uint[] Rows = Array2.Empty<uint>();
+
+	/// <summary/>
+	public uint ExtraData;
+}
 
 /// <summary>
 /// Metadata stream info
@@ -76,6 +119,11 @@ public sealed class MetadataInfo {
 	/// </summary>
 	/// <remarks>Currently return 0 if table stream is uncompressed (aka #-)</remarks>
 	public uint MetadataSize;
+
+	/// <summary>
+	/// Metadata schema
+	/// </summary>
+	public MetadataSchema Schema = MetadataSchema.Empty;
 
 	/// <summary>
 	/// #~ or #- info

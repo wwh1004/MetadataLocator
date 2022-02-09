@@ -7,6 +7,7 @@ namespace MetadataLocator;
 static unsafe class MetadataInfoImpl {
 	sealed class PointerProfile {
 		public nuint Vfptr; // MDInternalRO or MDInternalRW
+		public Pointer Schema = Pointer.Empty;
 		public Pointer MetadataAddress = Pointer.Empty;
 		public Pointer MetadataSize = Pointer.Empty;
 		public Pointer[] HeapAddress = Array2.Empty<Pointer>();
@@ -33,15 +34,28 @@ static unsafe class MetadataInfoImpl {
 	}
 
 	static PointerProfile CreateProfile(bool uncompressed) {
+		const bool InMemory = false;
+
+		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
+		if (uncompressed)
+			assemblyFlags |= TestAssemblyFlags.Uncompressed;
+		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
+		nuint module = assembly.ModuleHandle;
+		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		// Get native Module object
+
 		var stgdbPointer = ScanLiteWeightStgdbPointer(uncompressed, out nuint vfptr);
 		ScanMetadataOffsets(stgdbPointer, uncompressed, out uint metadataAddressOffset, out uint metadataSizeOffset);
-		ScanHeapOffsets(stgdbPointer, metadataAddressOffset, uncompressed, out var heapAddressOffsets, out var heapSizeOffsets);
+		var info = new MiniMetadataInfo(Utils.ReadUIntPtr(Utils.WithOffset(stgdbPointer, metadataAddressOffset), module));
+		ScanSchemaOffset(stgdbPointer, info, uncompressed, out uint schemaOffset);
+		ScanHeapOffsets(stgdbPointer, info, uncompressed, out var heapAddressOffsets, out var heapSizeOffsets);
 		var profile = new PointerProfile {
 			Vfptr = vfptr,
-			MetadataAddress = MakePointer(stgdbPointer, metadataAddressOffset),
-			MetadataSize = MakePointer(stgdbPointer, metadataSizeOffset),
-			HeapAddress = MakePointers(stgdbPointer, heapAddressOffsets),
-			HeapSize = MakePointers(stgdbPointer, heapSizeOffsets),
+			Schema = Utils.WithOffset(stgdbPointer, schemaOffset),
+			MetadataAddress = Utils.WithOffset(stgdbPointer, metadataAddressOffset),
+			MetadataSize = Utils.WithOffset(stgdbPointer, metadataSizeOffset),
+			HeapAddress = Utils.WithOffset(stgdbPointer, heapAddressOffsets),
+			HeapSize = Utils.WithOffset(stgdbPointer, heapSizeOffsets),
 		};
 		return profile;
 	}
@@ -133,12 +147,12 @@ static unsafe class MetadataInfoImpl {
 		}
 		Utils.Check(m_pvMd_Offset != 0);
 
-		Utils.Check(Utils.Verify(MakePointer(stgdbPointer, m_pvMd_Offset), uncompressed, p => Memory.TryReadUInt32(p, out uint signature) && signature == 0x424A5342));
+		Utils.Check(Utils.Verify(Utils.WithOffset(stgdbPointer, m_pvMd_Offset), uncompressed, p => Memory.TryReadUInt32(p, out uint signature) && signature == 0x424A5342));
 		metadataAddressOffset = m_pvMd_Offset;
 		metadataSizeOffset = m_pvMd_Offset + (uint)sizeof(nuint);
 	}
 
-	static void ScanHeapOffsets(Pointer stgdbPointer, uint metadataAddressOffset, bool uncompressed, out uint[] heapAddressOffsets, out uint[] heapSizeOffsets) {
+	static void ScanSchemaOffset(Pointer stgdbPointer, MiniMetadataInfo info, bool uncompressed, out uint schemaOffset) {
 		const bool InMemory = false;
 
 		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
@@ -150,7 +164,30 @@ static unsafe class MetadataInfoImpl {
 		// Get native Module object
 
 		nuint pStgdb = Utils.ReadUIntPtr(stgdbPointer, module);
-		var info = new MiniMetadataInfo(*(nuint*)(Utils.ReadUIntPtr(stgdbPointer, module) + metadataAddressOffset));
+		for (schemaOffset = 0; schemaOffset < 0x30; schemaOffset += 4) {
+			if (*(ulong*)(pStgdb + schemaOffset) != info.Header1)
+				continue;
+			if (*(ulong*)(pStgdb + schemaOffset + 0x08) != info.ValidMask)
+				continue;
+			if (*(ulong*)(pStgdb + schemaOffset + 0x10) != info.SortedMask)
+				continue;
+			break;
+		}
+		Utils.Check(schemaOffset != 0x30);
+	}
+
+	static void ScanHeapOffsets(Pointer stgdbPointer, MiniMetadataInfo info, bool uncompressed, out uint[] heapAddressOffsets, out uint[] heapSizeOffsets) {
+		const bool InMemory = false;
+
+		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
+		if (uncompressed)
+			assemblyFlags |= TestAssemblyFlags.Uncompressed;
+		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
+		nuint module = assembly.ModuleHandle;
+		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		// Get native Module object
+
+		nuint pStgdb = Utils.ReadUIntPtr(stgdbPointer, module);
 		uint start = uncompressed ? (sizeof(nuint) == 4 ? 0xD00u : 0x1500) : (sizeof(nuint) == 4 ? 0x2A0u : 0x500);
 		uint end = uncompressed ? (sizeof(nuint) == 4 ? 0x1000u : 0x1900) : (sizeof(nuint) == 4 ? 0x3A0u : 0x600);
 		heapAddressOffsets = new uint[4];
@@ -192,23 +229,7 @@ static unsafe class MetadataInfoImpl {
 		// Find heeap info offsets
 
 		for (int i = 0; i < heapAddressOffsets.Length; i++)
-			Utils.Check(Utils.Verify(MakePointer(stgdbPointer, heapAddressOffsets[i]), uncompressed, p => Memory.TryReadUInt32(p, out _)));
-	}
-
-	static Pointer[] MakePointers(Pointer basePointer, uint[] offsets) {
-		var pointers = new Pointer[offsets.Length];
-		for (int i = 0; i < pointers.Length; i++) {
-			var pointer = new Pointer(basePointer);
-			pointer.Add(offsets[i]);
-			pointers[i] = pointer;
-		}
-		return pointers;
-	}
-
-	static Pointer MakePointer(Pointer basePointer, uint offset) {
-		var pointer = new Pointer(basePointer);
-		pointer.Add(offset);
-		return pointer;
+			Utils.Check(Utils.Verify(Utils.WithOffset(stgdbPointer, heapAddressOffsets[i]), uncompressed, p => Memory.TryReadUInt32(p, out _)));
 	}
 
 	public static MetadataInfo GetMetadataInfo(Module module) {
@@ -224,60 +245,63 @@ static unsafe class MetadataInfoImpl {
 
 			var metadataInfo = new MetadataInfo {
 				MetadataAddress = Utils.ReadUIntPtr(profile.MetadataAddress, moduleHandle),
-				MetadataSize = Utils.ReadUInt32(profile.MetadataSize, moduleHandle)
+				MetadataSize = Utils.ReadUInt32(profile.MetadataSize, moduleHandle),
+				Schema = GetSchema(profile, moduleHandle),
+				TableStream = GetTableStream(),
+				StringHeap = GetHeapInfo(profile, StringHeapIndex, moduleHandle),
+				UserStringHeap = GetHeapInfo(profile, UserStringsHeapIndex, moduleHandle),
+				GuidHeap = GetHeapInfo(profile, GuidHeapIndex, moduleHandle),
+				BlobHeap = GetHeapInfo(profile, BlobHeapIndex, moduleHandle)
 			};
-			metadataInfo.TableStream = GetTableStream(metadataInfo);
-			metadataInfo.StringHeap = GetHeapInfo(metadataInfo);
-			metadataInfo.UserStringHeap = GetUserStringHeap(metadataInfo);
-			metadataInfo.GuidHeap = GetGuidHeap(metadataInfo);
-			metadataInfo.BlobHeap = GetBlobHeap(metadataInfo);
 			return metadataInfo;
 		}
-
 		Debug2.Assert(false);
 		return MetadataInfo.Empty;
 	}
 
-	static MetadataTableInfo GetTableStream(MetadataInfo metadataInfo) {
+	static MetadataSchema GetSchema(PointerProfile profile, nuint moduleHandle) {
+		var pSchema = (RuntimeDefinitions.CMiniMdSchema*)Utils.ReadPointer(profile.Schema, moduleHandle);
+		if (pSchema is null) {
+			Debug2.Assert(false);
+			return MetadataSchema.Empty;
+		}
+		var rows = new uint[RuntimeDefinitions.TBL_COUNT];
+		for (int i = 0; i < rows.Length; i++)
+			rows[i] = pSchema->m_cRecs[i];
+		var schema = new MetadataSchema {
+			Reserved1 = pSchema->__base.m_ulReserved,
+			MajorVersion = pSchema->__base.m_major,
+			MinorVersion = pSchema->__base.m_minor,
+			Log2Rid = pSchema->__base.m_rid,
+			Flags = pSchema->__base.m_heaps,
+			ValidMask = pSchema->__base.m_maskvalid,
+			SortedMask = pSchema->__base.m_sorted,
+			Rows = rows,
+			ExtraData = pSchema->m_ulExtra
+		};
+		return schema;
+	}
+
+	static MetadataTableInfo GetTableStream() {
 		return MetadataTableInfo.Empty;
 	}
 
-	static MetadataHeapInfo GetHeapInfo(MetadataInfo metadataInfo) {
-		throw new NotImplementedException();
-	}
-
-	static MetadataHeapInfo GetUserStringHeap(MetadataInfo metadataInfo) {
-		throw new NotImplementedException();
-	}
-
-	static MetadataHeapInfo GetGuidHeap(MetadataInfo metadataInfo) {
-		throw new NotImplementedException();
-	}
-
-	static MetadataHeapInfo GetBlobHeap(MetadataInfo metadataInfo) {
-		throw new NotImplementedException();
-	}
-
-	static uint AlignUp(uint value, uint alignment) {
-		return (value + alignment - 1) & ~(alignment - 1);
-	}
-
-	static byte GetCompressedUInt32Length(uint value) {
-		if (value < 0x80)
-			return 1;
-		else if (value < 0x4000)
-			return 2;
-		else
-			return 4;
-	}
-
-	static bool IsZeros(nuint pStgPoolReadOnly) {
-		var stgPool = (RuntimeDefinitions.StgPoolReadOnly*)pStgPoolReadOnly;
-		return stgPool->__base.m_cbSegSize == 0;
-		// TODO: check m_pSegData is pointer to m_zeros
+	static MetadataHeapInfo GetHeapInfo(PointerProfile profile, int index, nuint moduleHandle) {
+		uint size = Utils.ReadUInt32(profile.HeapSize[index], moduleHandle);
+		if (size == 0)
+			return MetadataHeapInfo.Empty;
+		// TODO: also check m_pSegData is pointer to m_zeros
+		var heapInfo = new MetadataHeapInfo {
+			Address = Utils.ReadUIntPtr(profile.HeapAddress[index], moduleHandle),
+			Length = size
+		};
+		return heapInfo;
 	}
 
 	sealed class MiniMetadataInfo {
+		public ulong Header1;
+		public ulong ValidMask;
+		public ulong SortedMask;
 		public nuint TableStreamAddress;
 		public uint TableStreamSize;
 		public nuint StringHeapAddress;
@@ -306,22 +330,27 @@ static unsafe class MetadataInfoImpl {
 				switch (name) {
 				case "#~":
 				case "#-":
+					Utils.Check(TableStreamAddress == 0);
 					TableStreamAddress = pMetadata + offset;
 					TableStreamSize = size;
 					break;
 				case "#Strings":
+					Utils.Check(StringHeapAddress == 0);
 					StringHeapAddress = pMetadata + offset;
 					StringHeapSize = size;
 					break;
 				case "#US":
+					Utils.Check(UserStringHeapAddress == 0);
 					UserStringHeapAddress = pMetadata + offset;
 					UserStringHeapSize = size;
 					break;
 				case "#GUID":
+					Utils.Check(GuidHeapAddress == 0);
 					GuidHeapAddress = pMetadata + offset;
 					GuidHeapSize = size;
 					break;
 				case "#Blob":
+					Utils.Check(BlobHeapAddress == 0);
 					BlobHeapAddress = pMetadata + offset;
 					BlobHeapSize = size;
 					break;
@@ -330,6 +359,9 @@ static unsafe class MetadataInfoImpl {
 					throw new NotSupportedException();
 				}
 			}
+			Header1 = *(ulong*)TableStreamAddress;
+			ValidMask = *(ulong*)(TableStreamAddress + 0x08);
+			SortedMask = *(ulong*)(TableStreamAddress + 0x10);
 		}
 	}
 }

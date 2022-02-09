@@ -1,88 +1,120 @@
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace MetadataLocator.Test;
 
 public static unsafe class TestDriver {
+	static int indent;
+
 	public static void Test() {
 		RuntimeDefinitionTests.VerifySize();
 		RuntimeDefinitionTests.VerifyOffset();
 		MetadataImportTests.Test();
-		var testModule = typeof(MetadataInfo).Module;
-		var peInfo = PEInfo.Create(testModule);
-		PrintPEInfo(nameof(PEInfo), peInfo);
-		var metadataInfo = MetadataInfo.Create(testModule);
-		PrintMetadataInfo(nameof(MetadataInfo), metadataInfo);
+		Print(Assembly.GetEntryAssembly().ManifestModule);
+		Print(typeof(MetadataInfo).Module);
 		Console.ReadKey(true);
 	}
 
-	static void PrintPEInfo(string name, PEInfo peInfo) {
+	static void Print(Module module) {
+		Print($"{module.Assembly.GetName().Name}: {{");
+		indent++;
+		var peInfo = PEInfo.Create(module);
+		Print(nameof(PEInfo), peInfo);
+		var metadataInfo = MetadataInfo.Create(module);
+		Print(nameof(MetadataInfo), metadataInfo);
+		indent--;
+		Print("},");
+	}
+
+	static void Print(string name, PEInfo peInfo) {
 		if (peInfo.IsInvalid) {
-			WriteLine($"{name}: null,");
+			Print($"{name}: null,");
 			return;
 		}
 
-		WriteLine($"{name}: {{");
+		Print($"{name}: {{");
 		indent++;
-		WriteLine($"{nameof(PEInfo.FilePath)}: {peInfo.FilePath},");
-		WriteLine($"{nameof(PEInfo.InMemory)}: {peInfo.InMemory},");
-		PrintImageLayout(nameof(PEInfo.FlatLayout), peInfo.FlatLayout);
-		PrintImageLayout(nameof(PEInfo.MappedLayout), peInfo.MappedLayout);
-		PrintImageLayout(nameof(PEInfo.LoadedLayout), peInfo.LoadedLayout);
+		Print($"{nameof(PEInfo.FilePath)}: {peInfo.FilePath},");
+		Print($"{nameof(PEInfo.InMemory)}: {peInfo.InMemory},");
+		Print(nameof(PEInfo.FlatLayout), peInfo.FlatLayout);
+		Print(nameof(PEInfo.MappedLayout), peInfo.MappedLayout);
+		Print(nameof(PEInfo.LoadedLayout), peInfo.LoadedLayout);
 		indent--;
-		WriteLine("},");
+		Print("},");
 	}
 
-	static void PrintImageLayout(string name, PEImageLayout imageLayout) {
+	static void Print(string name, PEImageLayout imageLayout) {
 		if (imageLayout.IsInvalid) {
-			WriteLine($"{name}: null,");
+			Print($"{name}: null,");
 			return;
 		}
 
-		WriteLine($"{name}: {{");
+		Print($"{name}: {{");
 		indent++;
-		WriteLine($"{nameof(PEImageLayout.ImageBase)}: {FormatHex(imageLayout.ImageBase)},");
-		WriteLine($"{nameof(PEImageLayout.ImageSize)}: {FormatHex(imageLayout.ImageSize)},");
-		WriteLine($"{nameof(PEImageLayout.CorHeaderAddress)}: {FormatHex(imageLayout.CorHeaderAddress)},");
+		Print($"{nameof(PEImageLayout.ImageBase)}: {FormatHex(imageLayout.ImageBase)},");
+		Print($"{nameof(PEImageLayout.ImageSize)}: {FormatHex(imageLayout.ImageSize)},");
+		Print($"{nameof(PEImageLayout.CorHeaderAddress)}: {FormatHex(imageLayout.CorHeaderAddress)},");
 		indent--;
-		WriteLine("},");
+		Print("},");
 	}
 
-	static void PrintMetadataInfo(string name, MetadataInfo metadataInfo) {
+	static void Print(string name, MetadataInfo metadataInfo) {
 		if (metadataInfo.IsInvalid) {
-			WriteLine($"{name}: null,");
+			Print($"{name}: null,");
 			return;
 		}
 
-		WriteLine($"{name}: {{");
+		Print($"{name}: {{");
 		indent++;
-		PrintStreamInfo(nameof(MetadataInfo.TableStream), metadataInfo.TableStream);
-		PrintStreamInfo(nameof(MetadataInfo.StringHeap), metadataInfo.StringHeap);
-		PrintStreamInfo(nameof(MetadataInfo.UserStringHeap), metadataInfo.UserStringHeap);
-		PrintStreamInfo(nameof(MetadataInfo.GuidHeap), metadataInfo.GuidHeap);
-		PrintStreamInfo(nameof(MetadataInfo.BlobHeap), metadataInfo.BlobHeap);
+		Print($"{nameof(MetadataInfo.MetadataAddress)}: {FormatHex(metadataInfo.MetadataAddress)},");
+		Print($"{nameof(MetadataInfo.MetadataSize)}: {FormatHex(metadataInfo.MetadataSize)},");
+		Print(nameof(MetadataInfo.Schema), metadataInfo.Schema);
+		Print(nameof(MetadataInfo.TableStream), metadataInfo.TableStream);
+		Print(nameof(MetadataInfo.StringHeap), metadataInfo.StringHeap);
+		Print(nameof(MetadataInfo.UserStringHeap), metadataInfo.UserStringHeap);
+		Print(nameof(MetadataInfo.GuidHeap), metadataInfo.GuidHeap);
+		Print(nameof(MetadataInfo.BlobHeap), metadataInfo.BlobHeap);
 		indent--;
-		WriteLine("},");
+		Print("},");
 	}
 
-	static void PrintStreamInfo(string name, MetadataStreamInfo streamInfo) {
+	static void Print(string name, MetadataSchema schema) {
+		if (schema.IsEmpty) {
+			Print($"{name}: null,");
+			return;
+		}
+
+		Print($"{name}: {{");
+		indent++;
+		Print($"{nameof(MetadataSchema.MajorVersion)}: {schema.MajorVersion},");
+		Print($"{nameof(MetadataSchema.MinorVersion)}: {schema.MinorVersion},");
+		Print($"{nameof(MetadataSchema.Flags)}: {schema.Flags},");
+		Print($"{nameof(MetadataSchema.Log2Rid)}: {schema.Log2Rid},");
+		Print($"{nameof(MetadataSchema.ValidMask)}: {FormatHex(schema.ValidMask)},");
+		Print($"{nameof(MetadataSchema.SortedMask)}: {FormatHex(schema.SortedMask)},");
+		Print($"{nameof(MetadataSchema.Rows)}: \"{string.Join(",", schema.Rows.Select(t => t.ToString()).ToArray())}\",");
+		indent--;
+		Print("},");
+	}
+
+	static void Print(string name, MetadataStreamInfo streamInfo) {
 		if (streamInfo.IsEmpty) {
-			WriteLine($"{name}: null,");
+			Print($"{name}: null,");
 			return;
 		}
 
-		WriteLine($"{name}: {{");
+		Print($"{name}: {{");
 		indent++;
-		WriteLine($"{nameof(MetadataStreamInfo.Address)}: {FormatHex(streamInfo.Address)},");
-		WriteLine($"{nameof(MetadataStreamInfo.Length)}: {FormatHex(streamInfo.Length)},");
+		Print($"{nameof(MetadataStreamInfo.Address)}: {FormatHex(streamInfo.Address)},");
+		Print($"{nameof(MetadataStreamInfo.Length)}: {FormatHex(streamInfo.Length)},");
 		if (streamInfo is MetadataTableInfo tableStream)
-			WriteLine($"{nameof(MetadataTableInfo.IsCompressed)}: {tableStream.IsCompressed},");
+			Print($"{nameof(MetadataTableInfo.IsCompressed)}: {tableStream.IsCompressed},");
 		indent--;
-		WriteLine("},");
+		Print("},");
 	}
 
-	static int indent;
-
-	static void WriteLine(string value) {
+	static void Print(string value) {
 		Console.WriteLine(new string(' ', indent * 2) + value);
 	}
 

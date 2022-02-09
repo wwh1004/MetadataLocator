@@ -97,7 +97,7 @@ static unsafe class Utils {
 		return value;
 	}
 
-	static nuint ReadPointer(Pointer template, nuint baseAddress) {
+	public static nuint ReadPointer(Pointer template, nuint baseAddress) {
 		if (template.IsEmpty)
 			return default;
 		var pointer = MakePointer(template, baseAddress);
@@ -106,8 +106,24 @@ static unsafe class Utils {
 		return address;
 	}
 
-	static Pointer MakePointer(Pointer template, nuint baseAddress) {
+	public static Pointer MakePointer(Pointer template, nuint baseAddress) {
 		Debug2.Assert(!template.IsEmpty);
 		return new Pointer(template) { BaseAddress = baseAddress };
+	}
+
+	public static Pointer[] WithOffset(Pointer basePointer, uint[] offsets) {
+		var pointers = new Pointer[offsets.Length];
+		for (int i = 0; i < pointers.Length; i++) {
+			var pointer = new Pointer(basePointer);
+			pointer.Add(offsets[i]);
+			pointers[i] = pointer;
+		}
+		return pointers;
+	}
+
+	public static Pointer WithOffset(Pointer basePointer, uint offset) {
+		var pointer = new Pointer(basePointer);
+		pointer.Add(offset);
+		return pointer;
 	}
 }

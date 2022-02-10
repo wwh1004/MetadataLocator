@@ -1,0 +1,10 @@
+<Project>
+	<Import Project="MetadataLocator.Test.props" />
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<NoWarn>NU1702</NoWarn>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\MetadataLocator.Test\MetadataLocator.Test.csproj" />
+	</ItemGroup>
+</Project>

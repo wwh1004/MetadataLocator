@@ -9,11 +9,10 @@ public static unsafe class TestDriver {
 
 	public static void Test() {
 		RuntimeDefinitionTests.VerifySize();
-		RuntimeDefinitionTests.VerifyOffset();
 		MetadataImportTests.Test();
 		Print(Assembly.GetEntryAssembly().ManifestModule, true);
 		Print(typeof(MetadataInfo).Module, true);
-		RunTestAssemblys(5);
+		//RunTestAssemblys(5);
 		Console.ReadKey(true);
 	}
 

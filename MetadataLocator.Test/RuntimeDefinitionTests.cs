@@ -49,24 +49,4 @@ static unsafe class RuntimeDefinitionTests {
 			Assert.IsTrue(actualSize == expectedSize, $"Expected size 0x{expectedSize:X} bytes but got 0x{actualSize:X} bytes for {sizeEntry.Key.Name}");
 		}
 	}
-
-	public static void VerifyOffset() {
-		int dummy = 0;
-		if (sizeof(nuint) == 4) {
-			nuint t = (nuint)(&((MDInternalRO_20*)&dummy)->m_LiteWeightStgdb.m_pvMd) - (nuint)(&dummy);
-			Assert.IsTrue(t == 0x0370);
-			t = (nuint)(&((MDInternalRO_40*)&dummy)->m_LiteWeightStgdb.m_pvMd) - (nuint)(&dummy);
-			Assert.IsTrue(t == 0x0378);
-			t = (nuint)(&((MDInternalRO_45*)&dummy)->m_LiteWeightStgdb.m_pvMd) - (nuint)(&dummy);
-			Assert.IsTrue(t == 0x0378);
-		}
-		else {
-			nuint t = (nuint)(&((MDInternalRO_20*)&dummy)->m_LiteWeightStgdb.m_pvMd) - (nuint)(&dummy);
-			Assert.IsTrue(t == 0x05d0);
-			t = (nuint)(&((MDInternalRO_40*)&dummy)->m_LiteWeightStgdb.m_pvMd) - (nuint)(&dummy);
-			Assert.IsTrue(t == 0x05d0);
-			t = (nuint)(&((MDInternalRO_45*)&dummy)->m_LiteWeightStgdb.m_pvMd) - (nuint)(&dummy);
-			Assert.IsTrue(t == 0x05d8);
-		}
-	}
 }

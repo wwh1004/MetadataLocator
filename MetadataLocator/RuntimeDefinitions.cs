@@ -1,8 +1,17 @@
+using System.Runtime.InteropServices;
+
 namespace MetadataLocator;
 
 #pragma warning disable CS0649
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 public static unsafe class RuntimeDefinitions {
+	static class DummyBuffer {
+		public static readonly nuint Value = VirtualAlloc(0, 0x2000, 0x1000, 4);
+
+		[DllImport("kernel32.dll", SetLastError = true)]
+		static extern nuint VirtualAlloc(nuint lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+	}
+
 	#region Basic
 	public const uint STORAGE_MAGIC_SIG = 0x424A5342; // BSJB
 
@@ -104,7 +113,9 @@ public static unsafe class RuntimeDefinitions {
 
 	/* incomplete */
 	public struct PEImageLayout {
-		public nuint __vfptr;
+		public static readonly PEImageLayout* Dummy = (PEImageLayout*)DummyBuffer.Value;
+
+        public nuint __vfptr;
 		public PEDecoder __base;
 
 		// ... some paddings ...
@@ -126,6 +137,8 @@ public static unsafe class RuntimeDefinitions {
 
 	/* incomplete */
 	public struct PEImage_20 {
+		public static readonly PEImage_20* Dummy = (PEImage_20*)DummyBuffer.Value;
+
 		public Crst m_PdbStreamLock;
 		public nuint m_pPdbStream;
 		/* important */
@@ -142,6 +155,8 @@ public static unsafe class RuntimeDefinitions {
 
 	/* incomplete */
 	public struct PEImage_40 {
+		public static readonly PEImage_40* Dummy = (PEImage_40*)DummyBuffer.Value;
+
 		/* important */
 		public SString m_path;
 
@@ -156,6 +171,8 @@ public static unsafe class RuntimeDefinitions {
 
 	/* incomplete */
 	public struct PEFile {
+		public static readonly PEFile* Dummy = (PEFile*)DummyBuffer.Value;
+
 		public nuint __vfptr;
 		public PEImage* m_identity;      // Identity image
 		/* important */
@@ -418,6 +435,8 @@ public static unsafe class RuntimeDefinitions {
 
 	/* complete, 0x0250 / 0x03c0 bytes */
 	public struct CMiniMdBase_20 {
+		public static readonly CMiniMdBase_20* Dummy = (CMiniMdBase_20*)DummyBuffer.Value;
+
 		public nuint __vfptr;
 		public CMiniMdSchema m_Schema;         // data header.
 		public uint m_TblCount;                // Tables in this database.
@@ -429,6 +448,8 @@ public static unsafe class RuntimeDefinitions {
 
 	/* complete, 0x0258 / 0x03c0 bytes */
 	public struct CMiniMdBase_40 {
+		public static readonly CMiniMdBase_40* Dummy = (CMiniMdBase_40*)DummyBuffer.Value;
+
 		public nuint __vfptr;
 		public CMiniMdSchema m_Schema;         // data header.
 		public uint m_TblCount;                // Tables in this database.
@@ -523,11 +544,15 @@ public static unsafe class RuntimeDefinitions {
 	}
 
 	public struct MDInternalRW_20 {
+		public static readonly MDInternalRW_20* Dummy = (MDInternalRW_20*)DummyBuffer.Value;
+
 		public nuint __vfptr_IMDInternalImport;
 		public CLiteWeightStgdbRW* m_pStgdb;
 	}
 
 	public struct MDInternalRW_45 {
+		public static readonly MDInternalRW_45* Dummy = (MDInternalRW_45*)DummyBuffer.Value;
+
 		public nuint __vfptr_IMDInternalImport;
 		public nuint __vfptr_IMDCommon;
 		public CLiteWeightStgdbRW* m_pStgdb;
@@ -541,6 +566,8 @@ public static unsafe class RuntimeDefinitions {
 
 	/* incomplete */
 	public struct Module_20 {
+		public static readonly Module_20* Dummy = (Module_20*)DummyBuffer.Value;
+
 		public nuint __vfptr;
 		/* important */
 		public PEFile* m_file;
@@ -548,6 +575,8 @@ public static unsafe class RuntimeDefinitions {
 
 	/* incomplete */
 	public struct Module_453 {
+		public static readonly Module_453* Dummy = (Module_453*)DummyBuffer.Value;
+
 		public nuint __vfptr;
 		public nuint m_pSimpleName;
 		/* important */

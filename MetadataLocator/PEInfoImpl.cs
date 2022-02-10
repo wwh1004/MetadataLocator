@@ -1,7 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using static MetadataLocator.RuntimeDefinitions;
+using SR = System.Reflection;
 
 namespace MetadataLocator;
 
@@ -39,32 +40,31 @@ static unsafe class PEInfoImpl {
 	static Pointer ScanFilePathPointer() {
 		const bool InMemory = false;
 
-		int dummy = 0;
 		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		uint m_file_Offset;
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453)
-			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_453*)&dummy)->m_file) - (nuint)(&dummy));
+			m_file_Offset = (uint)((nuint)(&Module_453.Dummy->m_file) - (nuint)Module_453.Dummy);
 		else
-			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_20*)&dummy)->m_file) - (nuint)(&dummy));
+			m_file_Offset = (uint)((nuint)(&Module_20.Dummy->m_file) - (nuint)Module_20.Dummy);
 		nuint m_file = *(nuint*)(module + m_file_Offset);
-		Utils.Check((RuntimeDefinitions.PEFile*)m_file);
+		Utils.Check((PEFile*)m_file);
 		// Module.m_file
 
-		uint m_openedILimage_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEFile*)&dummy)->m_openedILimage) - (nuint)(&dummy));
+		uint m_openedILimage_Offset = (uint)((nuint)(&PEFile.Dummy->m_openedILimage) - (nuint)PEFile.Dummy);
 		nuint m_openedILimage = *(nuint*)(m_file + m_openedILimage_Offset);
-		Utils.Check((RuntimeDefinitions.PEImage*)m_openedILimage, InMemory);
+		Utils.Check((PEImage*)m_openedILimage, InMemory);
 		// PEFile.m_openedILimage
 
 		uint m_path_m_buffer_Offset = 0;
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx40)
-			m_path_m_buffer_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEImage_40*)&dummy)->m_path.m_buffer) - (nuint)(&dummy));
+			m_path_m_buffer_Offset = (uint)((nuint)(&PEImage_40.Dummy->m_path.m_buffer) - (nuint)PEImage_40.Dummy);
 		else
-			m_path_m_buffer_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEImage_20*)&dummy)->m_path.m_buffer) - (nuint)(&dummy));
+			m_path_m_buffer_Offset = (uint)((nuint)(&PEImage_20.Dummy->m_path.m_buffer) - (nuint)PEImage_20.Dummy);
 		nuint m_path_m_buffer = *(nuint*)(m_openedILimage + m_path_m_buffer_Offset);
 		Utils.Check(Memory.TryReadUnicodeString(m_path_m_buffer, out var path) && File.Exists(path));
 		// PEImage.m_path.m_buffer
@@ -82,25 +82,24 @@ static unsafe class PEInfoImpl {
 	static Pointer ScanLoadedImageLayoutPointer(out bool isMappedLayoutExisting) {
 		const bool InMemory = true;
 
-		int dummy = 0;
 		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		uint m_file_Offset;
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453)
-			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_453*)&dummy)->m_file) - (nuint)(&dummy));
+			m_file_Offset = (uint)((nuint)(&Module_453.Dummy->m_file) - (nuint)Module_453.Dummy);
 		else
-			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_20*)&dummy)->m_file) - (nuint)(&dummy));
+			m_file_Offset = (uint)((nuint)(&Module_20.Dummy->m_file) - (nuint)Module_20.Dummy);
 		nuint m_file = *(nuint*)(module + m_file_Offset);
-		Utils.Check((RuntimeDefinitions.PEFile*)m_file);
+		Utils.Check((PEFile*)m_file);
 		// Module.m_file
 
-		uint m_openedILimage_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEFile*)&dummy)->m_openedILimage) - (nuint)(&dummy));
+		uint m_openedILimage_Offset = (uint)((nuint)(&PEFile.Dummy->m_openedILimage) - (nuint)PEFile.Dummy);
 		nuint m_openedILimage = *(nuint*)(m_file + m_openedILimage_Offset);
-		Utils.Check((RuntimeDefinitions.PEImage*)m_openedILimage, InMemory);
+		Utils.Check((PEImage*)m_openedILimage, InMemory);
 		// PEFile.m_openedILimage
 
 		nuint m_pMDImport = MetadataImport.Create(assembly.Module).This;
@@ -142,9 +141,9 @@ static unsafe class PEInfoImpl {
 		Utils.Check((RuntimeDefinitions.PEImageLayout*)m_pLayouts_Loaded, InMemory);
 		// PEImage.m_pLayouts[IMAGE_LOADED]
 
-		uint m_pCorHeader_Offset = (uint)((nuint)(&((RuntimeDefinitions.PEImageLayout*)&dummy)->__base.m_pCorHeader) - (nuint)(&dummy));
+		uint m_pCorHeader_Offset = (uint)((nuint)(&RuntimeDefinitions.PEImageLayout.Dummy->__base.m_pCorHeader) - (nuint)RuntimeDefinitions.PEImageLayout.Dummy);
 		nuint m_pCorHeader = *(nuint*)(m_pLayouts_Loaded + m_pCorHeader_Offset);
-		Utils.Check((RuntimeDefinitions.IMAGE_COR20_HEADER*)m_pCorHeader);
+		Utils.Check((IMAGE_COR20_HEADER*)m_pCorHeader);
 		// PEImageLayout.m_pCorHeader
 
 		var pointer = new Pointer(new[] {
@@ -157,7 +156,7 @@ static unsafe class PEInfoImpl {
 		return pointer;
 	}
 
-	public static PEInfo GetPEInfo(Module module) {
+	public static PEInfo GetPEInfo(SR.Module module) {
 		if (module is null)
 			throw new ArgumentNullException(nameof(module));
 

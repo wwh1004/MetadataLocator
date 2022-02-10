@@ -129,7 +129,7 @@ public sealed class MetadataInfo {
 	/// <summary>
 	/// Size of metadata
 	/// </summary>
-	/// <remarks>Currently return 0 if table stream is uncompressed (aka #-)</remarks>
+	/// <remarks>Currently return 0x1c if table stream is uncompressed (aka #-)</remarks>
 	public uint MetadataSize;
 
 	/// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
-using System.Reflection;
+using static MetadataLocator.RuntimeDefinitions;
+using SR = System.Reflection;
 
 namespace MetadataLocator;
 
@@ -47,7 +48,7 @@ static unsafe class MetadataInfoImpl {
 			assemblyFlags |= TestAssemblyFlags.Uncompressed;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		var stgdbPointer = ScanLiteWeightStgdbPointer(uncompressed, out nuint vfptr);
@@ -81,22 +82,21 @@ static unsafe class MetadataInfoImpl {
 	static Pointer ScanLiteWeightStgdbPointer(bool uncompressed, out nuint vfptr) {
 		const bool InMemory = false;
 
-		int dummy = 0;
 		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
 		if (uncompressed)
 			assemblyFlags |= TestAssemblyFlags.Uncompressed;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		uint m_file_Offset;
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx453)
-			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_453*)&dummy)->m_file) - (nuint)(&dummy));
+			m_file_Offset = (uint)((nuint)(&Module_453.Dummy->m_file) - (nuint)Module_453.Dummy);
 		else
-			m_file_Offset = (uint)((nuint)(&((RuntimeDefinitions.Module_20*)&dummy)->m_file) - (nuint)(&dummy));
+			m_file_Offset = (uint)((nuint)(&Module_20.Dummy->m_file) - (nuint)Module_20.Dummy);
 		nuint m_file = *(nuint*)(module + m_file_Offset);
-		Utils.Check((RuntimeDefinitions.PEFile*)m_file);
+		Utils.Check((PEFile*)m_file);
 		// Module.m_file
 
 		var metadataImport = MetadataImport.Create(assembly.Module);
@@ -116,9 +116,9 @@ static unsafe class MetadataInfoImpl {
 		uint m_pStgdb_Offset = 0;
 		if (uncompressed) {
 			if (RuntimeEnvironment.Version >= RuntimeVersion.Fx45)
-				m_pStgdb_Offset = (uint)((nuint)(&((RuntimeDefinitions.MDInternalRW_45*)&dummy)->m_pStgdb) - (nuint)(&dummy));
+				m_pStgdb_Offset = (uint)((nuint)(&MDInternalRW_45.Dummy->m_pStgdb) - (nuint)MDInternalRW_45.Dummy);
 			else
-				m_pStgdb_Offset = (uint)((nuint)(&((RuntimeDefinitions.MDInternalRW_20*)&dummy)->m_pStgdb) - (nuint)(&dummy));
+				m_pStgdb_Offset = (uint)((nuint)(&MDInternalRW_20.Dummy->m_pStgdb) - (nuint)MDInternalRW_20.Dummy);
 		}
 		// MDInternalRW.m_pStgdb
 
@@ -140,13 +140,13 @@ static unsafe class MetadataInfoImpl {
 			assemblyFlags |= TestAssemblyFlags.Uncompressed;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		nuint pStgdb = Utils.ReadUIntPtr(stgdbPointer, module);
 		var peInfo = PEInfo.Create(assembly.Module);
 		var imageLayout = peInfo.MappedLayout.IsInvalid ? peInfo.LoadedLayout : peInfo.MappedLayout;
-		var m_pCorHeader = (RuntimeDefinitions.IMAGE_COR20_HEADER*)imageLayout.CorHeaderAddress;
+		var m_pCorHeader = (IMAGE_COR20_HEADER*)imageLayout.CorHeaderAddress;
 		nuint m_pvMd = imageLayout.ImageBase + m_pCorHeader->MetaData.VirtualAddress;
 		uint m_cbMd = uncompressed ? 0x1c : m_pCorHeader->MetaData.Size;
 		// *pcb = sizeof(STORAGESIGNATURE) + pStorage->GetVersionStringLength();
@@ -177,7 +177,7 @@ static unsafe class MetadataInfoImpl {
 			assemblyFlags |= TestAssemblyFlags.Uncompressed;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		nuint pStgdb = Utils.ReadUIntPtr(stgdbPointer, module);
@@ -197,29 +197,28 @@ static unsafe class MetadataInfoImpl {
 	static void ScanTableDefsOffsets(Pointer stgdbPointer, bool uncompressed, uint schemaOffset, out uint tableCountOffset, out uint tableDefsOffset) {
 		const bool InMemory = false;
 
-		int dummy = 0;
 		var assemblyFlags = InMemory ? TestAssemblyFlags.InMemory : 0;
 		if (uncompressed)
 			assemblyFlags |= TestAssemblyFlags.Uncompressed;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		nuint pSchema = Utils.ReadPointer(Utils.WithOffset(stgdbPointer, schemaOffset), module);
-		nuint p = pSchema + (uint)sizeof(RuntimeDefinitions.CMiniMdSchema);
+		nuint p = pSchema + (uint)sizeof(CMiniMdSchema);
 		uint m_TblCount = *(uint*)p;
 		tableCountOffset = schemaOffset + (uint)(p - pSchema);
-		Utils.Check(m_TblCount == RuntimeDefinitions.TBL_COUNT_V1 || m_TblCount == RuntimeDefinitions.TBL_COUNT_V2);
+		Utils.Check(m_TblCount == TBL_COUNT_V1 || m_TblCount == TBL_COUNT_V2);
 		// CMiniMdBase.m_TblCount
 
 		if (RuntimeEnvironment.Version >= RuntimeVersion.Fx40)
-			p += (uint)((nuint)(&((RuntimeDefinitions.CMiniMdBase_40*)&dummy)->m_TableDefs) - (nuint)(&((RuntimeDefinitions.CMiniMdBase_40*)&dummy)->m_TblCount));
+			p += (uint)((nuint)(&CMiniMdBase_40.Dummy->m_TableDefs) - (nuint)(&CMiniMdBase_40.Dummy->m_TblCount));
 		else
-			p += (uint)((nuint)(&((RuntimeDefinitions.CMiniMdBase_20*)&dummy)->m_TableDefs) - (nuint)(&((RuntimeDefinitions.CMiniMdBase_20*)&dummy)->m_TblCount));
+			p += (uint)((nuint)(&CMiniMdBase_20.Dummy->m_TableDefs) - (nuint)(&CMiniMdBase_20.Dummy->m_TblCount));
 		tableDefsOffset = schemaOffset + (uint)(p - pSchema);
-		var m_TableDefs = (RuntimeDefinitions.CMiniTableDef*)p;
-		for (int i = 0; i < RuntimeDefinitions.TBL_COUNT; i++)
+		var m_TableDefs = (CMiniTableDef*)p;
+		for (int i = 0; i < TBL_COUNT; i++)
 			Utils.Check(Memory.TryReadUInt32((nuint)m_TableDefs[i].m_pColDefs, out _));
 		// CMiniMdBase.m_TableDefs
 	}
@@ -232,7 +231,7 @@ static unsafe class MetadataInfoImpl {
 			assemblyFlags |= TestAssemblyFlags.Uncompressed;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		nuint pStgdb = Utils.ReadUIntPtr(stgdbPointer, module);
@@ -288,7 +287,7 @@ static unsafe class MetadataInfoImpl {
 			assemblyFlags |= TestAssemblyFlags.Uncompressed;
 		var assembly = TestAssemblyManager.GetAssembly(assemblyFlags);
 		nuint module = assembly.ModuleHandle;
-		Utils.Check((RuntimeDefinitions.Module*)module, assembly.Module.Assembly.GetName().Name);
+		Utils.Check((Module*)module, assembly.Module.Assembly.GetName().Name);
 		// Get native Module object
 
 		tableAddressOffset = 0;
@@ -323,7 +322,7 @@ static unsafe class MetadataInfoImpl {
 		// CMiniMd.m_Tables
 	}
 
-	public static MetadataInfo GetMetadataInfo(Module module) {
+	public static MetadataInfo GetMetadataInfo(SR.Module module) {
 		if (module is null)
 			throw new ArgumentNullException(nameof(module));
 
@@ -347,7 +346,7 @@ static unsafe class MetadataInfoImpl {
 		return metadataInfo;
 	}
 
-	static Profile? FindProfile(Module module) {
+	static Profile? FindProfile(SR.Module module) {
 		nuint vfptr = MetadataImport.Create(module).Vfptr;
 		foreach (var profile in profiles) {
 			if (vfptr == profile.Vfptr)
@@ -358,12 +357,12 @@ static unsafe class MetadataInfoImpl {
 	}
 
 	static MetadataSchema GetSchema(Profile profile, nuint moduleHandle) {
-		var pSchema = (RuntimeDefinitions.CMiniMdSchema*)Utils.ReadPointer(profile.Schema, moduleHandle);
+		var pSchema = (CMiniMdSchema*)Utils.ReadPointer(profile.Schema, moduleHandle);
 		if (pSchema is null) {
 			Debug2.Assert(false);
 			return MetadataSchema.Empty;
 		}
-		var rows = new uint[RuntimeDefinitions.TBL_COUNT];
+		var rows = new uint[TBL_COUNT];
 		for (int i = 0; i < rows.Length; i++)
 			rows[i] = pSchema->m_cRecs[i];
 		var schema = new MetadataSchema {
@@ -394,11 +393,13 @@ static unsafe class MetadataInfoImpl {
 		}
 		uint headerSize = 0x18 + (validTableCount * 4);
 		nuint pTable = Utils.ReadUIntPtr(profile.TableAddress, moduleHandle);
+		if (profile.RidAsIndex)
+			pTable += rowSizes[0];
 		nuint address = pTable - headerSize;
 		uint size = headerSize + tablesSize;
 		var tableInfo = new MetadataTableInfo {
 			Address = address,
-			Length = size,
+			Length = (size + 3) & ~3u,
 			IsCompressed = !profile.Uncompressed,
 			TableCount = tableCount,
 			RowSizes = rowSizes
@@ -407,9 +408,9 @@ static unsafe class MetadataInfoImpl {
 	}
 
 	static uint[] GetRowSizes(Profile profile, nuint moduleHandle) {
-		var tableDefs = (RuntimeDefinitions.CMiniTableDef*)Utils.ReadPointer(profile.TableDefs, moduleHandle);
-		var rowSizes = new uint[RuntimeDefinitions.TBL_COUNT];
-		for (int i = 0; i < RuntimeDefinitions.TBL_COUNT; i++)
+		var tableDefs = (CMiniTableDef*)Utils.ReadPointer(profile.TableDefs, moduleHandle);
+		var rowSizes = new uint[TBL_COUNT];
+		for (int i = 0; i < TBL_COUNT; i++)
 			rowSizes[i] = tableDefs[i].m_cbRec;
 		return rowSizes;
 	}
@@ -421,7 +422,7 @@ static unsafe class MetadataInfoImpl {
 		// TODO: also check m_pSegData is pointer to m_zeros
 		var heapInfo = new MetadataHeapInfo {
 			Address = Utils.ReadUIntPtr(profile.HeapAddress[index], moduleHandle),
-			Length = size
+			Length = (size + 3) & ~3u
 		};
 		return heapInfo;
 	}
@@ -444,10 +445,10 @@ static unsafe class MetadataInfoImpl {
 		public nuint[] TableAddress;
 
 		public MiniMetadataInfo(nuint pMetadata) {
-			var pStorageSignature = (RuntimeDefinitions.STORAGESIGNATURE*)pMetadata;
+			var pStorageSignature = (STORAGESIGNATURE*)pMetadata;
 			Utils.Check(pStorageSignature);
-			var pStorageHeader = (RuntimeDefinitions.STORAGEHEADER*)((nuint)pStorageSignature + 0x10 + pStorageSignature->iVersionString);
-			nuint p = (nuint)pStorageHeader + (uint)sizeof(RuntimeDefinitions.STORAGEHEADER);
+			var pStorageHeader = (STORAGEHEADER*)((nuint)pStorageSignature + 0x10 + pStorageSignature->iVersionString);
+			nuint p = (nuint)pStorageHeader + (uint)sizeof(STORAGEHEADER);
 			Utils.Check(pStorageHeader->iStreams == 5);
 			// must have 5 streams so we can get all stream info offsets
 			for (int i = 0; i < pStorageHeader->iStreams; i++) {
@@ -492,10 +493,10 @@ static unsafe class MetadataInfoImpl {
 			Header1 = *(ulong*)TableStreamAddress;
 			ValidMask = *(ulong*)(TableStreamAddress + 0x08);
 			SortedMask = *(ulong*)(TableStreamAddress + 0x10);
-			TableAddress = new nuint[RuntimeDefinitions.TBL_COUNT];
-			RowCounts = new uint[RuntimeDefinitions.TBL_COUNT];
+			TableAddress = new nuint[TBL_COUNT];
+			RowCounts = new uint[TBL_COUNT];
 			p = TableStreamAddress + 0x18;
-			for (int i = 0; i < RuntimeDefinitions.TBL_COUNT; i++) {
+			for (int i = 0; i < TBL_COUNT; i++) {
 				if ((ValidMask & (1ul << i)) == 0)
 					continue;
 				RowCounts[i] = *(uint*)p;
@@ -506,8 +507,8 @@ static unsafe class MetadataInfoImpl {
 
 		public void CalculateTableAddress(nuint tableDefs, bool ridAsIndex) {
 			nuint p = TableAddress[0];
-			var tableDefs2 = (RuntimeDefinitions.CMiniTableDef*)tableDefs;
-			for (int i = 0; i < RuntimeDefinitions.TBL_COUNT; i++) {
+			var tableDefs2 = (CMiniTableDef*)tableDefs;
+			for (int i = 0; i < TBL_COUNT; i++) {
 				TableAddress[i] = ridAsIndex ? p - tableDefs2[i].m_cbRec : p;
 				p += RowCounts[i] * tableDefs2[i].m_cbRec;
 			}

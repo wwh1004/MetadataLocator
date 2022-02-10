@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MetadataLocator;
@@ -68,8 +69,7 @@ static unsafe class Memory {
 			return true;
 		}
 		catch {
-
-			throw;
+			return false;
 		}
 	}
 
@@ -77,6 +77,9 @@ static unsafe class Memory {
 	public static bool TryReadUInt32(nuint address, out uint value) {
 		value = 0;
 		if (address == 0)
+			return false;
+
+		if (IsBadReadPtr(address, 4))
 			return false;
 
 		try {
@@ -94,6 +97,9 @@ static unsafe class Memory {
 		if (address == 0)
 			return false;
 
+		if (IsBadReadPtr(address, 8))
+			return false;
+
 		try {
 			value = *(ulong*)address;
 			return true;
@@ -107,6 +113,9 @@ static unsafe class Memory {
 	public static bool TryReadUIntPtr(nuint address, out nuint value) {
 		value = 0;
 		if (address == 0)
+			return false;
+
+		if (IsBadReadPtr(address, (uint)sizeof(nuint)))
 			return false;
 
 		try {
@@ -125,6 +134,9 @@ static unsafe class Memory {
 		if (address == 0)
 			return false;
 
+		if (IsBadReadPtr(address, 8))
+			return false;
+
 		try {
 			value = new string((sbyte*)address);
 			return true;
@@ -138,6 +150,9 @@ static unsafe class Memory {
 	public static bool TryReadUnicodeString(nuint address, [NotNullWhen(true)] out string? value) {
 		value = null;
 		if (address == 0)
+			return false;
+
+		if (IsBadReadPtr(address, 8))
 			return false;
 
 		try {
@@ -155,6 +170,9 @@ static unsafe class Memory {
 		if (address == 0)
 			return false;
 
+		if (IsBadReadPtr(address, 8))
+			return false;
+
 		try {
 			uint i = 0;
 			for (; *(byte*)(address + i) != 0; i++)
@@ -168,4 +186,9 @@ static unsafe class Memory {
 			return false;
 		}
 	}
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	static extern bool IsBadReadPtr(nuint lp, nuint ucb);
+	// TODO: In .NET Core, HandleProcessCorruptedStateExceptionsAttribute is invalid and we can't capture AccessViolationException no longer.
+	// We should find a better way to check address readable.
 }

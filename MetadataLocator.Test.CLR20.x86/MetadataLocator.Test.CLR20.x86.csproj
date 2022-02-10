@@ -1,18 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Title>$(ProjectName)</Title>
-		<Version>1.0.0.0</Version>
-		<Copyright>Copyright © 2019-2022 Wwh</Copyright>
-	</PropertyGroup>
-	<PropertyGroup>
 		<TargetFramework>net35</TargetFramework>
 		<PlatformTarget>x86</PlatformTarget>
-		<LangVersion>10.0</LangVersion>
-		<OutputType>Exe</OutputType>
-		<OutputPath>..\bin\$(Configuration)</OutputPath>
-		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\MetadataLocator.Test\MetadataLocator.Test.csproj" />
-	</ItemGroup>
+	<Import Project="..\MetadataLocator.Test.CLR.props" />
 </Project>

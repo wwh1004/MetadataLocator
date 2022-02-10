@@ -13,6 +13,11 @@
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
 	<ItemGroup>
+		<Compile Include="..\MetadataLocator\ReflectionHelpers.cs" />
+		<Compile Include="..\MetadataLocator\RuntimeEnvironment.cs" />
+		<Compile Include="..\MetadataLocator\TestAssemblyManager.cs" />
+	</ItemGroup>
+	<ItemGroup>
 		<ProjectReference Include="..\MetadataLocator\MetadataLocator.csproj" />
 	</ItemGroup>
 </Project>

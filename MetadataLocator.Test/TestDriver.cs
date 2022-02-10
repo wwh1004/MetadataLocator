@@ -11,25 +11,35 @@ public static unsafe class TestDriver {
 		RuntimeDefinitionTests.VerifySize();
 		RuntimeDefinitionTests.VerifyOffset();
 		MetadataImportTests.Test();
-		Print(Assembly.GetEntryAssembly().ManifestModule);
-		Print(typeof(MetadataInfo).Module);
+		Print(Assembly.GetEntryAssembly().ManifestModule, true);
+		Print(typeof(MetadataInfo).Module, true);
+		RunTestAssemblys(5);
 		Console.ReadKey(true);
 	}
 
-	static void Print(Module module) {
-		Print($"{module.Assembly.GetName().Name}: {{");
-		indent++;
-		var peInfo = PEInfo.Create(module);
-		Print(nameof(PEInfo), peInfo);
-		var metadataInfo = MetadataInfo.Create(module);
-		Print(nameof(MetadataInfo), metadataInfo);
-		indent--;
-		Print("},");
+	static void RunTestAssemblys(int count) {
+		for (int i = 0; i < count; i++) {
+			for (TestAssemblyFlags inMemory = 0; inMemory <= TestAssemblyFlags.InMemory; inMemory += (int)TestAssemblyFlags.InMemory) {
+				for (TestAssemblyFlags uncompressed = 0; uncompressed <= TestAssemblyFlags.Uncompressed; uncompressed += (int)TestAssemblyFlags.Uncompressed) {
+					var assembly = TestAssemblyManager.GetAssembly((TestAssemblyFlags)i | inMemory | uncompressed);
+					Print(assembly.Module, true);
+				}
+			}
+		}
 	}
 
-	static void Print(string name, PEInfo peInfo) {
+	static void Print(Module module, bool end = false) {
+		Print($"{module.Assembly.GetName().Name}: {{");
+		indent++;
+		Print(nameof(PEInfo), PEInfo.Create(module));
+		Print(nameof(MetadataInfo), MetadataInfo.Create(module), true);
+		indent--;
+		Print(end ? "}" : "},");
+	}
+
+	static void Print(string name, PEInfo peInfo, bool end = false) {
 		if (peInfo.IsInvalid) {
-			Print($"{name}: null,");
+			Print(end ? $"{name}: null" : $"{name}: null,");
 			return;
 		}
 
@@ -39,14 +49,14 @@ public static unsafe class TestDriver {
 		Print($"{nameof(PEInfo.InMemory)}: {peInfo.InMemory},");
 		Print(nameof(PEInfo.FlatLayout), peInfo.FlatLayout);
 		Print(nameof(PEInfo.MappedLayout), peInfo.MappedLayout);
-		Print(nameof(PEInfo.LoadedLayout), peInfo.LoadedLayout);
+		Print(nameof(PEInfo.LoadedLayout), peInfo.LoadedLayout, true);
 		indent--;
-		Print("},");
+		Print(end ? "}" : "},");
 	}
 
-	static void Print(string name, PEImageLayout imageLayout) {
+	static void Print(string name, PEImageLayout imageLayout, bool end = false) {
 		if (imageLayout.IsInvalid) {
-			Print($"{name}: null,");
+			Print(end ? $"{name}: null" : $"{name}: null,");
 			return;
 		}
 
@@ -54,14 +64,14 @@ public static unsafe class TestDriver {
 		indent++;
 		Print($"{nameof(PEImageLayout.ImageBase)}: {FormatHex(imageLayout.ImageBase)},");
 		Print($"{nameof(PEImageLayout.ImageSize)}: {FormatHex(imageLayout.ImageSize)},");
-		Print($"{nameof(PEImageLayout.CorHeaderAddress)}: {FormatHex(imageLayout.CorHeaderAddress)},");
+		Print($"{nameof(PEImageLayout.CorHeaderAddress)}: {FormatHex(imageLayout.CorHeaderAddress)}");
 		indent--;
-		Print("},");
+		Print(end ? "}" : "},");
 	}
 
-	static void Print(string name, MetadataInfo metadataInfo) {
+	static void Print(string name, MetadataInfo metadataInfo, bool end = false) {
 		if (metadataInfo.IsInvalid) {
-			Print($"{name}: null,");
+			Print(end ? $"{name}: null" : $"{name}: null,");
 			return;
 		}
 
@@ -74,44 +84,61 @@ public static unsafe class TestDriver {
 		Print(nameof(MetadataInfo.StringHeap), metadataInfo.StringHeap);
 		Print(nameof(MetadataInfo.UserStringHeap), metadataInfo.UserStringHeap);
 		Print(nameof(MetadataInfo.GuidHeap), metadataInfo.GuidHeap);
-		Print(nameof(MetadataInfo.BlobHeap), metadataInfo.BlobHeap);
+		Print(nameof(MetadataInfo.BlobHeap), metadataInfo.BlobHeap, true);
 		indent--;
-		Print("},");
+		Print(end ? "}" : "},");
 	}
 
-	static void Print(string name, MetadataSchema schema) {
+	static void Print(string name, MetadataSchema schema, bool end = false) {
 		if (schema.IsEmpty) {
-			Print($"{name}: null,");
+			Print(end ? $"{name}: null" : $"{name}: null,");
 			return;
 		}
 
 		Print($"{name}: {{");
 		indent++;
+		Print($"{nameof(MetadataSchema.Reserved1)}: {schema.Reserved1},");
 		Print($"{nameof(MetadataSchema.MajorVersion)}: {schema.MajorVersion},");
 		Print($"{nameof(MetadataSchema.MinorVersion)}: {schema.MinorVersion},");
 		Print($"{nameof(MetadataSchema.Flags)}: {schema.Flags},");
 		Print($"{nameof(MetadataSchema.Log2Rid)}: {schema.Log2Rid},");
 		Print($"{nameof(MetadataSchema.ValidMask)}: {FormatHex(schema.ValidMask)},");
 		Print($"{nameof(MetadataSchema.SortedMask)}: {FormatHex(schema.SortedMask)},");
-		Print($"{nameof(MetadataSchema.Rows)}: \"{string.Join(",", schema.Rows.Select(t => t.ToString()).ToArray())}\",");
+		Print($"{nameof(MetadataSchema.RowCounts)}: \"{string.Join(",", schema.RowCounts.Select(t => $"0x{t:X}").ToArray())}\",");
+		Print($"{nameof(MetadataSchema.ExtraData)}: {schema.ExtraData}");
 		indent--;
-		Print("},");
+		Print(end ? "}" : "},");
 	}
 
-	static void Print(string name, MetadataStreamInfo streamInfo) {
-		if (streamInfo.IsEmpty) {
+	static void Print(string name, MetadataTableInfo tableInfo, bool end = false) {
+		if (tableInfo.IsEmpty) {
+			Print(end ? $"{name}: null" : $"{name}: null,");
+			return;
+		}
+
+		Print($"{name}: {{");
+		indent++;
+		Print($"{nameof(MetadataTableInfo.Address)}: {FormatHex(tableInfo.Address)},");
+		Print($"{nameof(MetadataTableInfo.Length)}: {FormatHex(tableInfo.Length)},");
+		Print($"{nameof(MetadataTableInfo.IsCompressed)}: {tableInfo.IsCompressed}");
+		Print($"{nameof(MetadataTableInfo.TableCount)}: {tableInfo.TableCount},");
+		Print($"{nameof(MetadataTableInfo.RowSizes)}: \"{string.Join(",", tableInfo.RowSizes.Select(t => $"0x{t:X}").ToArray())}\"");
+		indent--;
+		Print(end ? "}" : "},");
+	}
+
+	static void Print(string name, MetadataHeapInfo heapInfo, bool end = false) {
+		if (heapInfo.IsEmpty) {
 			Print($"{name}: null,");
 			return;
 		}
 
 		Print($"{name}: {{");
 		indent++;
-		Print($"{nameof(MetadataStreamInfo.Address)}: {FormatHex(streamInfo.Address)},");
-		Print($"{nameof(MetadataStreamInfo.Length)}: {FormatHex(streamInfo.Length)},");
-		if (streamInfo is MetadataTableInfo tableStream)
-			Print($"{nameof(MetadataTableInfo.IsCompressed)}: {tableStream.IsCompressed},");
+		Print($"{nameof(MetadataStreamInfo.Address)}: {FormatHex(heapInfo.Address)},");
+		Print($"{nameof(MetadataStreamInfo.Length)}: {FormatHex(heapInfo.Length)}");
 		indent--;
-		Print("},");
+		Print(end ? "}" : "},");
 	}
 
 	static void Print(string value) {

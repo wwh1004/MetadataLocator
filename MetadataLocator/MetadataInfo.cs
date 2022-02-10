@@ -39,7 +39,8 @@ public sealed class MetadataSchema {
 	public ulong SortedMask;
 
 	/// <summary/>
-	public uint[] Rows = Array2.Empty<uint>();
+	/// <remarks>Array length always equals to <see cref="RuntimeDefinitions.TBL_COUNT"/> if not empty</remarks>
+	public uint[] RowCounts = Array2.Empty<uint>();
 
 	/// <summary/>
 	public uint ExtraData;
@@ -78,6 +79,17 @@ public sealed class MetadataTableInfo : MetadataStreamInfo {
 	/// Is compressed table stream (#~)
 	/// </summary>
 	public bool IsCompressed;
+
+	/// <summary>
+	/// Table count, see <see cref="RuntimeDefinitions.TBL_COUNT_V1"/> and  <see cref="RuntimeDefinitions.TBL_COUNT_V2"/>
+	/// </summary>
+	public uint TableCount;
+
+	/// <summary>
+	/// Size of each row
+	/// </summary>
+	/// <remarks>Array length always equals to <see cref="RuntimeDefinitions.TBL_COUNT"/> if not empty</remarks>
+	public uint[] RowSizes = Array2.Empty<uint>();
 }
 
 /// <summary>

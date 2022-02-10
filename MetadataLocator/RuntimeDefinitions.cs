@@ -362,9 +362,9 @@ public static unsafe class RuntimeDefinitions {
 	/* complete, 0x08 / 0x10 bytes */
 	public struct CMiniTableDef {
 		public CMiniColDef* m_pColDefs; // Array of field defs.
-		public byte m_cCols;     // Count of columns in the table.
-		public byte m_iKey;      // Column which is the key, if any.
-		public ushort m_cbRec;   // Size of the records.
+		public byte m_cCols;            // Count of columns in the table.
+		public byte m_iKey;             // Column which is the key, if any.
+		public ushort m_cbRec;          // Size of the records.
 	};
 
 	/* complete, 0x0168 / 0x02d0 bytes */

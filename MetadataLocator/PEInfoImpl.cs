@@ -173,7 +173,7 @@ static unsafe class PEInfoImpl {
 
 	static PEImageLayout GetImageLayout(nuint pImageLayout) {
 		if (pImageLayout == 0)
-			return PEImageLayout.Empty;
+			return new();
 
 		var pLayout = (RuntimeDefinitions.PEImageLayout*)pImageLayout;
 		var layout = new PEImageLayout {

@@ -8,14 +8,9 @@ namespace MetadataLocator;
 /// </summary>
 public sealed class MetadataSchema {
 	/// <summary>
-	/// Empty instance
+	/// Determine if current instance is invalid
 	/// </summary>
-	public static readonly MetadataSchema Empty = new();
-
-	/// <summary>
-	/// Determine if current instance is empty
-	/// </summary>
-	public bool IsEmpty => this == Empty;
+	public bool IsInvalid => ValidMask == 0;
 
 	/// <summary/>
 	public uint Reserved1;
@@ -51,9 +46,9 @@ public sealed class MetadataSchema {
 /// </summary>
 public abstract class MetadataStreamInfo {
 	/// <summary>
-	/// Determine if current instance is empty
+	/// Determine if current instance is invalid
 	/// </summary>
-	public bool IsEmpty => Address == 0 || Length == 0;
+	public bool IsInvalid => Address == 0;
 
 	/// <summary>
 	/// Address of stream
@@ -70,11 +65,6 @@ public abstract class MetadataStreamInfo {
 /// Metadata table info (#~, #-)
 /// </summary>
 public sealed class MetadataTableInfo : MetadataStreamInfo {
-	/// <summary>
-	/// Empty instance
-	/// </summary>
-	public static readonly MetadataTableInfo Empty = new();
-
 	/// <summary>
 	/// Is compressed table stream (#~)
 	/// </summary>
@@ -96,10 +86,6 @@ public sealed class MetadataTableInfo : MetadataStreamInfo {
 /// Metadata heap info (#Strings, #US, #GUID, #Blob)
 /// </summary>
 public sealed class MetadataHeapInfo : MetadataStreamInfo {
-	/// <summary>
-	/// Empty instance
-	/// </summary>
-	public static readonly MetadataHeapInfo Empty = new();
 }
 
 /// <summary>
@@ -107,14 +93,9 @@ public sealed class MetadataHeapInfo : MetadataStreamInfo {
 /// </summary>
 public sealed class MetadataInfo {
 	/// <summary>
-	/// Empty instance
-	/// </summary>
-	public static readonly MetadataInfo Empty = new();
-
-	/// <summary>
 	/// Determine if current instance is invalid
 	/// </summary>
-	public bool IsInvalid => this == Empty;
+	public bool IsInvalid => MetadataAddress == 0;
 
 	/// <summary>
 	/// The instance of <see cref="MetadataLocator.MetadataImport"/>
@@ -135,32 +116,32 @@ public sealed class MetadataInfo {
 	/// <summary>
 	/// Metadata schema
 	/// </summary>
-	public MetadataSchema Schema = MetadataSchema.Empty;
+	public MetadataSchema Schema = new();
 
 	/// <summary>
 	/// #~ or #- info
 	/// </summary>
-	public MetadataTableInfo TableStream = MetadataTableInfo.Empty;
+	public MetadataTableInfo TableStream = new();
 
 	/// <summary>
 	/// #Strings heap info
 	/// </summary>
-	public MetadataHeapInfo StringHeap = MetadataHeapInfo.Empty;
+	public MetadataHeapInfo StringHeap = new();
 
 	/// <summary>
 	/// #US heap info
 	/// </summary>
-	public MetadataHeapInfo UserStringHeap = MetadataHeapInfo.Empty;
+	public MetadataHeapInfo UserStringHeap = new();
 
 	/// <summary>
 	/// #GUID heap info
 	/// </summary>
-	public MetadataHeapInfo GuidHeap = MetadataHeapInfo.Empty;
+	public MetadataHeapInfo GuidHeap = new();
 
 	/// <summary>
 	/// #Blob heap info
 	/// </summary>
-	public MetadataHeapInfo BlobHeap = MetadataHeapInfo.Empty;
+	public MetadataHeapInfo BlobHeap = new();
 
 	/// <summary>
 	/// Get the metadata info of a module

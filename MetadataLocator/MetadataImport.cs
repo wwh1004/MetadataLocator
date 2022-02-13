@@ -46,7 +46,7 @@ public sealed unsafe class MetadataImport {
 	/// <summary>
 	/// Determine if current instance is invalid
 	/// </summary>
-	public bool IsInvalid => this == Empty;
+	public bool IsInvalid => This == 0;
 
 	/// <summary>
 	/// Instance of IMDInternalImport

@@ -329,7 +329,7 @@ static unsafe class MetadataInfoImpl {
 		Initialize();
 		var profile = FindProfile(module);
 		if (profile is null)
-			return MetadataInfo.Empty;
+			return new MetadataInfo();
 
 		nuint moduleHandle = ReflectionHelpers.GetModuleHandle(module);
 		var schema = GetSchema(profile, moduleHandle);
@@ -360,7 +360,7 @@ static unsafe class MetadataInfoImpl {
 		var pSchema = (CMiniMdSchema*)Utils.ReadPointer(profile.Schema, moduleHandle);
 		if (pSchema is null) {
 			Debug2.Assert(false);
-			return MetadataSchema.Empty;
+			return new();
 		}
 		var rows = new uint[TBL_COUNT];
 		for (int i = 0; i < rows.Length; i++)
@@ -418,7 +418,7 @@ static unsafe class MetadataInfoImpl {
 	static MetadataHeapInfo GetHeapInfo(Profile profile, int index, nuint moduleHandle) {
 		uint size = Utils.ReadUInt32(profile.HeapSize[index], moduleHandle);
 		if (size == 0)
-			return MetadataHeapInfo.Empty;
+			return new MetadataHeapInfo();
 		// TODO: also check m_pSegData is pointer to m_zeros
 		var heapInfo = new MetadataHeapInfo {
 			Address = Utils.ReadUIntPtr(profile.HeapAddress[index], moduleHandle),

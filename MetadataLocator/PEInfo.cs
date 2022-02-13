@@ -7,14 +7,9 @@ namespace MetadataLocator;
 /// </summary>
 public sealed class PEImageLayout {
 	/// <summary>
-	/// Empty instance
-	/// </summary>
-	public static readonly PEImageLayout Empty = new();
-
-	/// <summary>
 	/// Determine if current instance is invalid
 	/// </summary>
-	public bool IsInvalid => this == Empty;
+	public bool IsInvalid => ImageBase == 0;
 
 	/// <summary>
 	/// Image base address
@@ -37,14 +32,9 @@ public sealed class PEImageLayout {
 /// </summary>
 public sealed class PEInfo {
 	/// <summary>
-	/// Empty instance
-	/// </summary>
-	public static readonly PEInfo Empty = new();
-
-	/// <summary>
 	/// Determine if current instance is invalid
 	/// </summary>
-	public bool IsInvalid => this == Empty;
+	public bool IsInvalid => LoadedLayout.IsInvalid;
 
 	/// <summary>
 	/// Image file path
@@ -59,17 +49,17 @@ public sealed class PEInfo {
 	/// <summary>
 	/// Flat image layout, maybe empty (Assembly.Load(byte[]))
 	/// </summary>
-	public PEImageLayout FlatLayout = PEImageLayout.Empty;
+	public PEImageLayout FlatLayout = new();
 
 	/// <summary>
 	/// Mapped image layout, maybe empty (Assembly.LoadFile)
 	/// </summary>
-	public PEImageLayout MappedLayout = PEImageLayout.Empty;
+	public PEImageLayout MappedLayout = new();
 
 	/// <summary>
 	/// Loaded image layout, not empty (Assembly.LoadFile)
 	/// </summary>
-	public PEImageLayout LoadedLayout = PEImageLayout.Empty;
+	public PEImageLayout LoadedLayout = new();
 
 	/// <summary>
 	/// Get the .NET PE info of a module

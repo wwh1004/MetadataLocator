@@ -89,7 +89,7 @@ public static unsafe class TestDriver {
 	}
 
 	static void Print(string name, MetadataSchema schema, bool end = false) {
-		if (schema.IsEmpty) {
+		if (schema.IsInvalid) {
 			Print(end ? $"{name}: null" : $"{name}: null,");
 			return;
 		}
@@ -110,7 +110,7 @@ public static unsafe class TestDriver {
 	}
 
 	static void Print(string name, MetadataTableInfo tableInfo, bool end = false) {
-		if (tableInfo.IsEmpty) {
+		if (tableInfo.IsInvalid) {
 			Print(end ? $"{name}: null" : $"{name}: null,");
 			return;
 		}
@@ -127,7 +127,7 @@ public static unsafe class TestDriver {
 	}
 
 	static void Print(string name, MetadataHeapInfo heapInfo, bool end = false) {
-		if (heapInfo.IsEmpty) {
+		if (heapInfo.IsInvalid) {
 			Print($"{name}: null,");
 			return;
 		}

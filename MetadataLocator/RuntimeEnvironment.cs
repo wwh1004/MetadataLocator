@@ -53,34 +53,33 @@ static class RuntimeEnvironment {
 	}
 
 	static RuntimeVersion GetRuntimeVersion() {
+		var version = Environment.Version;
+		int major = version.Major;
 		switch (Flavor) {
 		case RuntimeFlavor.Framework: {
-			nuint moduleHandle;
-			if ((moduleHandle = GetModuleHandle("clr.dll")) != 0) {
+			if (major == 4) {
 				var path = new StringBuilder(MAX_PATH);
-				if (!GetModuleFileName(moduleHandle, path, MAX_PATH))
+				if (!GetModuleFileName(GetModuleHandle("clr.dll"), path, MAX_PATH))
 					break;
-				var version = GetFileVersion(path.ToString());
-				if (version >= fx453)
+				var fileVersion = GetFileVersion(path.ToString());
+				if (fileVersion >= fx453)
 					return RuntimeVersion.Fx453;
-				if (version >= fx45)
+				if (fileVersion >= fx45)
 					return RuntimeVersion.Fx45;
 				return RuntimeVersion.Fx40;
 			}
-			if ((moduleHandle = GetModuleHandle("mscorwks.dll")) != 0) {
+			else if (major == 2) {
 				return RuntimeVersion.Fx20;
 			}
 			break;
 		}
 		case RuntimeFlavor.Core:
 		case RuntimeFlavor.Net: {
-			var version = Environment.Version;
-			int major = version.Major;
 			if (major == 4)
 				return RuntimeVersion.Core10;
 			// Improve .NET Core version APIs: https://github.com/dotnet/runtime/issues/28701
 			// Environment.Version works fine since .NET Core v3.0
-			int minor = Environment.Version.Minor;
+			int minor = version.Minor;
 			Debug2.Assert(major <= 6, "Update RuntimeDefinitions if need");
 			if (major >= 6)
 				return RuntimeVersion.Net60;
@@ -91,10 +90,10 @@ static class RuntimeEnvironment {
 					return RuntimeVersion.Core31;
 				return RuntimeVersion.Core30;
 			}
-			Debug2.Assert(false);
 			break;
 		}
 		}
+		Debug2.Assert(false);
 		throw new NotSupportedException();
 	}
 

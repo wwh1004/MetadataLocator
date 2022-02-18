@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -13,14 +12,9 @@ enum RuntimeFlavor {
 	Framework,
 
 	/// <summary>
-	/// .NET Core 1.0 ~ 3.1
+	/// .NET Core 1.0 ~ 3.1 and .NET 5.0 +
 	/// </summary>
-	Core,
-
-	/// <summary>
-	/// .NET 5.0 +
-	/// </summary>
-	Net
+	Core
 }
 
 enum RuntimeVersion {
@@ -31,8 +25,8 @@ enum RuntimeVersion {
 	Core10,
 	Core30,
 	Core31,
-	Net50,
-	Net60,
+	Core50,
+	Core60,
 }
 
 static class RuntimeEnvironment {
@@ -44,12 +38,11 @@ static class RuntimeEnvironment {
 	public static RuntimeVersion Version { get; } = GetRuntimeVersion();
 
 	static RuntimeFlavor GetRuntimeFlavor() {
-		var assemblyProductAttribute = (AssemblyProductAttribute)typeof(object).Assembly.GetCustomAttributes(typeof(AssemblyProductAttribute), false)[0];
-		string product = assemblyProductAttribute.Product;
-		if (product.EndsWith("Framework", StringComparison.Ordinal)) return RuntimeFlavor.Framework;
-		else if (product.EndsWith("Core", StringComparison.Ordinal)) return RuntimeFlavor.Core;
-		else if (product.EndsWith("NET", StringComparison.Ordinal)) return RuntimeFlavor.Net;
-		else throw new NotSupportedException();
+		switch (typeof(object).Module.ScopeName) {
+		case "CommonLanguageRuntimeLibrary": return RuntimeFlavor.Framework;
+		case "System.Private.CoreLib.dll": return RuntimeFlavor.Core;
+		default: throw new NotSupportedException();
+		}
 	}
 
 	static RuntimeVersion GetRuntimeVersion() {
@@ -73,8 +66,7 @@ static class RuntimeEnvironment {
 			}
 			break;
 		}
-		case RuntimeFlavor.Core:
-		case RuntimeFlavor.Net: {
+		case RuntimeFlavor.Core: {
 			if (major == 4)
 				return RuntimeVersion.Core10;
 			// Improve .NET Core version APIs: https://github.com/dotnet/runtime/issues/28701
@@ -82,9 +74,9 @@ static class RuntimeEnvironment {
 			int minor = version.Minor;
 			Debug2.Assert(major <= 6, "Update RuntimeDefinitions if need");
 			if (major >= 6)
-				return RuntimeVersion.Net60;
+				return RuntimeVersion.Core60;
 			if (major >= 5)
-				return RuntimeVersion.Net50;
+				return RuntimeVersion.Core50;
 			if (major >= 3) {
 				if (minor >= 1)
 					return RuntimeVersion.Core31;
